@@ -1,10 +1,11 @@
 import render
+import constants as const
 import logic
 
 def main():
 	print('\x1b[0;97;40', end='')
-	render.welcome()
-	difficulty = render.difficulty()
+	const.DEBUG = render.welcome()
+	difficulty = int(render.difficulty())
 	seed = render.seed()
 
 	if seed != '':

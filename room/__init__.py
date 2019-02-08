@@ -15,11 +15,13 @@ def mapToOutput(c):
 
 class Room:
 
-	def __init__(self, body = bodies.GENERIC):
+	def __init__(self, x, y, body = bodies.GENERIC):
 		self.neighbours = [None, None, None, None]
 
-		self.monsters = []
+		self.x = x
+		self.y = y
 
+		self.monsters = []
 		self.body = rd.choice(body)
 
 	def getPrintBody(self):

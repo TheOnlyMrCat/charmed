@@ -11,6 +11,10 @@ import constants as const
 def rand(rMin, rMax):
 	return randLib.randint(rMin, rMax)
 
+def log(*values):
+	if const.DEBUG:
+		print(*values)
+
 def generateMap(difficulty, seed = randLib.seed):
 	randLib.seed(seed)
 
@@ -27,7 +31,7 @@ def generateMap(difficulty, seed = randLib.seed):
 
 		# 1 = N, 2 = E, 3 = S, 4 = W
 		beginSide = rand(1, 4) if depth is not 0 else 3
-		endSide = beginSide + 2 % 4
+		endSide = (beginSide + 2) % 4
 
 		if beginSide % 2 is 0:
 			beginLoc = (0 if beginSide is 2 else const.MAP_WIDTH - 1, rand(0, const.MAP_HEIGHT - 1))
@@ -35,24 +39,26 @@ def generateMap(difficulty, seed = randLib.seed):
 
 			currentMap.append([beginLoc, endLoc])
 
-			currentLoc = list(beginLoc if beginLoc is 4 else endLoc)
-			finLoc = list(endLoc if endLoc is 2 else beginLoc)
+			currentLoc = list(beginLoc if beginSide is 4 else endLoc)
+			finLoc = list(endLoc if endSide is 2 else beginLoc)
 
-			lastRoom = Room(definitions.PATH)
+			log(currentLoc)
+			log(finLoc)
+
+			lastRoom = None
 			lastRoomDir = 4
-			while currentLoc != finLoc:
+			while not (currentLoc.x == finLoc.x and currentLoc.y == finLoc.y):
 				possibleDirs = None
 				if currentLoc[0] is const.MAP_WIDTH - 1: # If on the opposite edge
-					possibleDirs = [3 if currentLoc[1] > endLoc[1] else 1] # Move up or down only depending on where we are in relation to the exit
-				elif lastRoomDir is 4:
-					possibleDirs = [2, 3] if currentLoc[1] is 0 else [1, 2] if currentLoc[1] is const.MAP_HEIGHT else [1, 2, 3] # Move up, down or right randomly
-				elif lastRoomDir is 1:
-					possibleDirs = [2, 3] if currentLoc[1] is const.MAP_HEIGHT else [1, 2, 3]
+					possibleDirs = [3 if currentLoc[0] > finLoc[0] else 1] # Move up or down only depending on where we are in relation to the exit
+				elif lastRoomDir is 2:
+					possibleDirs = [2, 3] if currentLoc[1] is 0 else ([1, 2] if currentLoc[1] is const.MAP_HEIGHT - 1 else [1, 2, 3]) # Move up, down or right randomly according to the bounds of the map
 				elif lastRoomDir is 3:
-					possibleDirs = [1, 2] if currentLoc[1] is 0 else [1, 2, 3]
+					possibleDirs = [2] if currentLoc[1] is const.MAP_HEIGHT - 1 else [1, 2]
+				elif lastRoomDir is 1:
+					possibleDirs = [2] if currentLoc[1] is 0 else [2, 3]
 				else:
-					print('An unexpected error occurred while generating the map.')
-					exit(1)
+					raise IndexError('Unexpected map generation error')
 
 				newDir = randLib.choice(possibleDirs)
 				if newDir is 1:
@@ -62,30 +68,77 @@ def generateMap(difficulty, seed = randLib.seed):
 				elif newDir is 3:
 					currentLoc[1] += 1
 				else:
-					print('An unexpected error occurred while generating the map.')
-					exit(1)
+					raise IndexError('Unexpected map generation error')
 
-				newRoom = Room(definitions.PATH)
+				log(currentLoc, newDir)
+
+				newRoom = Room(currentLoc[0], currentLoc[1], definitions.PATH)
 				currentMap[currentLoc[1]][currentLoc[0]] = newRoom
 
-				lastRoomDir = newDir + 2 % 4
-
-				lastRoom.neighbours[lastRoomDir] = newRoom
-				newRoom.neighbours[newDir] = lastRoom
+				if lastRoom is not None:
+					lastRoom.neighbours[newDir - 1] = newRoom
+					newRoom.neighbours[(newDir + 2) % 4 - 1] = lastRoom
 
 				lastRoom = newRoom
+				lastRoomDir = newDir
 
 		else:
-			beginLoc = (beginSide, rand(0, const.MAP_WIDTH))
-			endLoc = (endSide, rand(0, const.MAP_WIDTH))
+			beginLoc = (rand(0, const.MAP_WIDTH - 1), 0 if beginSide is 1 else const.MAP_HEIGHT - 1)
+			endLoc   = (rand(0, const.MAP_WIDTH - 1), 0 if endSide   is 1 else const.MAP_HEIGHT - 1)
 
-			generatedMap.append((beginLoc, endLoc))
+			currentMap.append([beginLoc, endLoc])
 
-			currentLoc = beginLoc
-			while currentLoc != endLoc:
-				break
+			currentLoc = list(beginLoc if beginSide is 1 else endLoc)
+			finLoc = list(endLoc if endSide is 3 else beginLoc)
+
+			log(currentLoc)
+			log(finLoc)
+
+			lastRoom = None
+			lastRoomDir = 4
+			while not (currentLoc.x == finLoc.x and currentLoc.y == finLoc.y):
+				possibleDirs = None
+				if currentLoc[1] is const.MAP_HEIGHT - 1:  # If on the opposite edge
+					possibleDirs = [4 if currentLoc[0] > finLoc[0] else 2]  # Move left or right only depending on where we are in relation to the exit
+				elif lastRoomDir is 3:
+					possibleDirs = [2, 3] if currentLoc[0] is 0 else ([3, 4] if currentLoc[0] is const.MAP_WIDTH - 1 else [2, 3, 4])  # Move left, down or right randomly according to the bounds of the map
+				elif lastRoomDir is 2:
+					possibleDirs = [3] if currentLoc[0] is const.MAP_WIDTH - 1 else [2, 3]
+				elif lastRoomDir is 4:
+					possibleDirs = [3] if currentLoc[0] is 0 else [3, 4]
+				else:
+					raise IndexError('Unexpected map generation error')
+
+				newDir = randLib.choice(possibleDirs)
+				if newDir is 2:
+					currentLoc[0] += 1
+				elif newDir is 3:
+					currentLoc[1] += 1
+				elif newDir is 4:
+					currentLoc[0] -= 1
+				else:
+					raise IndexError('Unexpected map generation error')
+
+				log(currentLoc, newDir)
+
+				newRoom = Room(currentLoc[0], currentLoc[1], definitions.PATH)
+				currentMap[currentLoc[1]][currentLoc[0]] = newRoom
+
+				if lastRoom is not None:
+					lastRoom.neighbours[newDir - 1] = newRoom
+					newRoom.neighbours[(newDir + 2) % 4 - 1] = lastRoom
+
+				lastRoom = newRoom
+				lastRoomDir = newDir
 
 		generatedMap.append(currentMap)
+
+def roomToInt(room: Room, pos: List[int]) -> int:
+	i = 0
+	if room.x is pos[0] and room.y is pos[1]:
+		i = 0b10000000
+
+	return i
 
 def playGame(gameMap):
 	health = const.START_HEALTH
@@ -106,6 +159,8 @@ def playGame(gameMap):
 	while True:
 		rd.header()
 		rd.stats(health, armour, attack)
+
+		rd.rooms
 
 		command = input("> ")
 

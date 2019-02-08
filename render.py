@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List
 
 import math
 import constants as const
@@ -8,7 +8,7 @@ def welcome():
 	header()
 	print('Welcome to charmed.')
 	print('Ensure your terminal window is full-screen')
-	input('Press enter to continue.')
+	return input('Press enter to continue. ') == 'k'
 
 def difficulty():
 	header()
@@ -53,24 +53,26 @@ def rooms(roomMap: List[List[int]]):
 	e: Whether the tile has an eastern exit
 	s: Whether the tile has a southern exit
 	W: Whether the tile has a western exit
+
+	To show an unexplored room, set all bits to 0
 	"""
 	print('\x1b[38;5;15m\x1b[48;5;215m' + ('#' * (const.MAP_WIDTH + 2)))
 
 	for y in roomMap:
-		for c in roomMap[y]:
-			if c | 0b10000000:
-				print('\x1b[0;93;40m@')
-			elif c | 0b01000000:
+		for c in y:
+			if c & 0b10000000:
+				print('\x1b[0;33;103m@')
+			elif c & 0b01000000:
 				print('\x1b[0;35;105m⌘')
-			elif c | 0b00100000:
+			elif c & 0b00100000:
 				print('\x1b[0;33;103m<')
-			elif c | 0b00010000:
+			elif c & 0b00010000:
 				print('\x1b[0;33;103m>')
 			else:
-				n = c | 0b00001000 == 8
-				e = c | 0b00000100 == 4
-				s = c | 0b00000010 == 2
-				w = c | 0b00000001 == 1
+				n = c & 0b00001000 == 8
+				e = c & 0b00000100 == 4
+				s = c & 0b00000010 == 2
+				w = c & 0b00000001 == 1
 				if n:
 					if e:
 						if s:
@@ -117,7 +119,7 @@ def rooms(roomMap: List[List[int]]):
 
 				else:
 					print(' ')
-`
+
 	print('\x1b[38;5;15m\x1b[48;5;215m' + ('#' * (const.MAP_WIDTH + 2)))
 
 
@@ -148,5 +150,6 @@ def room(roomChars: List[List[str]]):
 def items(itemList: List[str]):
 	print("Items: ", end='')
 	for item in itemList:
-		print(item, end="\n       ")
-	input("Press enter to continue.")
+		print(item, end='\n       ') # End is to line up list
+
+	print()
