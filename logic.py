@@ -8,7 +8,7 @@ import random as randLib
 import render as rd
 import constants as const
 
-def rand(rMin, rMax):
+def rand(rMin, rMax) -> int:
 	return randLib.randint(rMin, rMax)
 
 def log(*values):
@@ -31,32 +31,31 @@ def generateMap(difficulty, seed = randLib.seed):
 
 		# 1 = N, 2 = E, 3 = S, 4 = W
 		beginSide = rand(1, 4) if depth is not 0 else 3
-		endSide = (beginSide + 2) % 4
+		endSide = (beginSide + 1) % 4 + 1
 
 		if beginSide % 2 is 0:
-			beginLoc = (0 if beginSide is 2 else const.MAP_WIDTH - 1, rand(0, const.MAP_HEIGHT - 1))
-			endLoc   = (0 if endSide   is 2 else const.MAP_WIDTH - 1, rand(0, const.MAP_HEIGHT - 1))
+			beginLoc = (0 if beginSide is 4 else const.MAP_WIDTH - 1, rand(0, const.MAP_HEIGHT - 1))
+			endLoc   = (0 if endSide   is 4 else const.MAP_WIDTH - 1, rand(0, const.MAP_HEIGHT - 1))
 
 			currentMap.append([beginLoc, endLoc])
 
-			currentLoc = list(beginLoc if beginSide is 4 else endLoc)
-			finLoc = list(endLoc if endSide is 2 else beginLoc)
+			currentLoc: List[int] = [beginLoc[0], beginLoc[1]] if beginSide is 4 else [endLoc[0], endLoc[1]]
+			finLoc = [endLoc[0], endLoc[1]] if endSide is 2 else [beginLoc[0], beginLoc[1]]
 
 			log(currentLoc)
 			log(finLoc)
 
 			lastRoom = None
-			lastRoomDir = 4
-			while not (currentLoc.x == finLoc.x and currentLoc.y == finLoc.y):
-				possibleDirs = None
+			lastRoomDir = 2
+			while not (currentLoc[0] == finLoc[0] and currentLoc[1] == finLoc[1]):
 				if currentLoc[0] is const.MAP_WIDTH - 1: # If on the opposite edge
-					possibleDirs = [3 if currentLoc[0] > finLoc[0] else 1] # Move up or down only depending on where we are in relation to the exit
+					possibleDirs = [3 if currentLoc[1] < finLoc[1] else 1] # Move up or down only depending on where we are in relation to the exit
 				elif lastRoomDir is 2:
 					possibleDirs = [2, 3] if currentLoc[1] is 0 else ([1, 2] if currentLoc[1] is const.MAP_HEIGHT - 1 else [1, 2, 3]) # Move up, down or right randomly according to the bounds of the map
 				elif lastRoomDir is 3:
-					possibleDirs = [2] if currentLoc[1] is const.MAP_HEIGHT - 1 else [1, 2]
+					possibleDirs = [2] if currentLoc[1] is const.MAP_HEIGHT - 1 else [2, 3]
 				elif lastRoomDir is 1:
-					possibleDirs = [2] if currentLoc[1] is 0 else [2, 3]
+					possibleDirs = [2] if currentLoc[1] is 0 else [1, 2]
 				else:
 					raise IndexError('Unexpected map generation error')
 
@@ -70,7 +69,7 @@ def generateMap(difficulty, seed = randLib.seed):
 				else:
 					raise IndexError('Unexpected map generation error')
 
-				log(currentLoc, newDir)
+				log(currentLoc, newDir, lastRoomDir)
 
 				newRoom = Room(currentLoc[0], currentLoc[1], definitions.PATH)
 				currentMap[currentLoc[1]][currentLoc[0]] = newRoom
@@ -88,16 +87,15 @@ def generateMap(difficulty, seed = randLib.seed):
 
 			currentMap.append([beginLoc, endLoc])
 
-			currentLoc = list(beginLoc if beginSide is 1 else endLoc)
-			finLoc = list(endLoc if endSide is 3 else beginLoc)
+			currentLoc = [beginLoc[0], beginLoc[1]] if beginSide is 1 else [endLoc[0], endLoc[1]]
+			finLoc = [endLoc[0], endLoc[1]] if endSide is 3 else [beginLoc[0], beginLoc[1]]
 
 			log(currentLoc)
 			log(finLoc)
 
 			lastRoom = None
-			lastRoomDir = 4
-			while not (currentLoc.x == finLoc.x and currentLoc.y == finLoc.y):
-				possibleDirs = None
+			lastRoomDir = 3
+			while not (currentLoc[0] == finLoc[0] and currentLoc[1] == finLoc[1]):
 				if currentLoc[1] is const.MAP_HEIGHT - 1:  # If on the opposite edge
 					possibleDirs = [4 if currentLoc[0] > finLoc[0] else 2]  # Move left or right only depending on where we are in relation to the exit
 				elif lastRoomDir is 3:
@@ -133,6 +131,8 @@ def generateMap(difficulty, seed = randLib.seed):
 
 		generatedMap.append(currentMap)
 
+	return generatedMap
+
 def roomToInt(room: Room, pos: List[int]) -> int:
 	i = 0
 	if room.x is pos[0] and room.y is pos[1]:
@@ -155,12 +155,20 @@ def playGame(gameMap):
 	track: Popen = None
 	filePath = os.path.dirname(os.path.realpath(__file__))
 
+	depth = 0
+	currentDepth = gameMap[depth]
+	posRooms: List[int] = currentDepth[len(currentDepth) - 1][0]
+	posInt: List[int] = gameMap[posRooms[1]][posRooms[0]]
+
 	# Main loop
 	while True:
 		rd.header()
 		rd.stats(health, armour, attack)
 
-		rd.rooms
+		rd.rooms(list([
+			[roomToInt(gameMap[y][x]) if explored[y][x] else 0 for x in range(gameMap[y])]
+			for y in range(gameMap)
+		]))
 
 		command = input("> ")
 

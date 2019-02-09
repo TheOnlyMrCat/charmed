@@ -1,7 +1,7 @@
 import random as rd
 import room.definitions as bodies
 
-def mapToOutput(c):
+def mapToOutput(c: str) -> str:
 	if c == 'w':
 		return '\x1b[0;97;104m.' # White '.' on bright blue
 	elif c == 'W':
@@ -24,5 +24,7 @@ class Room:
 		self.monsters = []
 		self.body = rd.choice(body)
 
+
+
 	def getPrintBody(self):
-		return ''.join(map(lambda row: map(mapToOutput, row), self.body)) + '\x1b[0;97;40m'
+		return ''.join(map(lambda row: ''.join(map(mapToOutput, row)), self.body)) + '\x1b[0;97;40m'

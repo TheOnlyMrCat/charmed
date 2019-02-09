@@ -9,9 +9,13 @@ def main():
 	seed = render.seed()
 
 	if seed != '':
-		logic.playGame(logic.generateMap(difficulty, seed))
+		render.generating(seed)
+		gameMap = logic.generateMap(difficulty, seed)
 	else:
-		logic.playGame(logic.generateMap(difficulty))
+		render.generating()
+		gameMap = logic.generateMap(difficulty)
+
+	logic.playGame(gameMap)
 
 if __name__ == "__main__":
 	main()

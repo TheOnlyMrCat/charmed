@@ -22,9 +22,9 @@ def seed():
 	header()
 	return input('Seed (leave blank for random): ')
 
-def generating():
+def generating(seed = None):
 	header()
-	print('Generating. Please wait.')
+	print('Generating level' + ('with seed ' + seed) if seed is not None else '' + '. This will take a moment.')
 
 def header():
 	subprocess.call('clear')
