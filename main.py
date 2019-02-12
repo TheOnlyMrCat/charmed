@@ -3,10 +3,12 @@ import constants as const
 import logic
 
 def main():
-	print('\x1b[0;97;40', end='')
-	const.DEBUG = render.welcome()
-	difficulty = int(render.difficulty())
-	seed = render.seed()
+	opts = render.welcome()
+	const.DEBUG = 'k' in opts
+	difficulty = int(render.difficulty()) if 'd' in opts else 2
+	seed = render.seed() if 's' in opts else ''
+
+	if "'" not in opts: render.tutorial()
 
 	if seed != '':
 		render.generating(seed)

@@ -8,23 +8,40 @@ def welcome():
 	header()
 	print('Welcome to charmed.')
 	print('Ensure your terminal window is full-screen')
-	return input('Press enter to continue. ') == 'k'
+	return input('Press enter to continue. ')
 
 def difficulty():
 	header()
-	print('Difficulty: [1] Easy (Monsters have less health and attack, and helpful items spawn more frequently')
-	print('            [2] Normal (Recommended)')
-	print('            [3] Hard (Monsters have more health and attack, and harmful items spawn more frequently)')
-	print("            [4] Insane (Monsters have more health and attack, and helpful items don't spawn")
+	print('Difficulty: [1] I wanna go home! (Monsters have less health and attack, and helpful items spawn more frequently')
+	print("            [2] What's in here? (Recommended)")
+	print('            [3] Hurt me plenty! (Monsters have more health and attack, and harmful items spawn more frequently)')
+	print("            [4] Just kill me. (Monsters have more health and attack, and helpful items don't spawn")
 	return input('Input a value: ')
 
 def seed():
 	header()
-	return input('Seed (leave blank for random): ')
+	return input('Seed: ')
 
-def generating(seed = None):
+def generating(seedVal = None):
 	header()
-	print('Generating level' + ('with seed ' + seed) if seed is not None else '' + '. This will take a moment.')
+	print('Generating level' + (('with seed ' + seedVal) if seedVal is not None else '') + '. This will take a moment.')
+
+def tutorial():
+	header()
+	print('          \x1b[48;5;91my\x1b[48;5;196mk\x1b[38;5;0m\x1b[48;5;208mu')
+	print('\x1b[0;97;40mMovement: \x1b[48;5;21mh\x1b[0;97;40m \x1b[38;5;0m\x1b[48;5;226ml\x1b[0;97;40m')
+	print('          \x1b[48;5;29mb\x1b[38;5;0m\x1b[48;5;46mj\x1b[48;5;154mn\x1b[0;97;40m')
+	print()
+	print('          \x1b[48;5;91my\x1b[48;5;208mu\x1b[0;97;40m')
+	print('          \x1b[48;5;21mh\x1b[38;5;0m\x1b[48;5;46mj\x1b[38;5;15m\x1b[48;5;196mk\x1b[38;5;0m\x1b[48;5;226ml\x1b[0;97;40m')
+	print('          \x1b[48;5;29mb\x1b[38;5;0m\x1b[48;5;154mn')
+	print('\x1b[0;97;40m')
+	print('Press "?" at any time for help.')
+	print('Commands on startup text: "\'" to skip tutorial')
+	print('                          "d" to set difficulty')
+	print('                          "s" to set seed')
+	print()
+	input('Press enter to continue.')
 
 def header():
 	subprocess.call('clear')
@@ -56,18 +73,19 @@ def rooms(roomMap: List[List[int]]):
 
 	To show an unexplored room, set all bits to 0
 	"""
-	print('\x1b[38;5;15m\x1b[48;5;215m' + ('#' * (const.MAP_WIDTH + 2)))
+	print('\x1b[38;5;15m\x1b[48;5;215m' + ('#' * (const.MAP_WIDTH + 1)))
 
 	for y in roomMap:
+		print('\x1b[38;5;15m\x1b[48;5;215m#', end='')
 		for c in y:
 			if c & 0b10000000:
-				print('\x1b[0;33;103m@')
+				print('\x1b[0;33;103m@', end='')
 			elif c & 0b01000000:
-				print('\x1b[0;35;105m⌘')
+				print('\x1b[0;35;105m⌘', end='')
 			elif c & 0b00100000:
-				print('\x1b[0;33;103m<')
+				print('\x1b[0;33;103m<', end='')
 			elif c & 0b00010000:
-				print('\x1b[0;33;103m>')
+				print('\x1b[0;33;103m>', end='')
 			else:
 				n = c & 0b00001000 == 8
 				e = c & 0b00000100 == 4
@@ -77,51 +95,51 @@ def rooms(roomMap: List[List[int]]):
 					if e:
 						if s:
 							if w:
-								print('╋') # N,E,S,W
+								print('╋', end='') # N,E,S,W
 							else:
-								print('┣') # N,E,S
+								print('┣', end='') # N,E,S
 						else:
 							if w:
-								print('┻') # N,E,W
+								print('┻', end='') # N,E,W
 							else:
-								print('┗') # N,E
+								print('┗', end='') # N,E
 					else:
 						if s:
 							if w:
-								print('┫') # N,S,W
+								print('┫', end='') # N,S,W
 							else:
-								print('|') # N,S
+								print('|', end='') # N,S
 						else:
 							if w:
-								print('┛') # N,W
+								print('┛', end='') # N,W
 							else:
-								print('↑') # N
+								print('↑', end='') # N
 				elif e:
 					if s:
 						if w:
-							print('┳') # E,S,W
+							print('┳', end='') # E,S,W
 						else:
-							print('┏') # E,S
+							print('┏', end='') # E,S
 					else:
 						if w:
-							print('–') # E,W
+							print('–', end='') # E,W
 						else:
-							print('→') # E
+							print('→', end='') # E
 
 				elif s:
 					if w:
-						print('┓') # S,W
+						print('┓', end='') # S,W
 					else:
-						print('↓') # S
+						print('↓', end='') # S
 
 				elif w:
-					print('←') # W
+					print('←', end='') # W
 
 				else:
-					print(' ')
+					print(' ', end='')
+		print('\x1b[38;5;15m\x1b[48;5;215m#')
 
-	print('\x1b[38;5;15m\x1b[48;5;215m' + ('#' * (const.MAP_WIDTH + 2)))
-
+	print('\x1b[38;5;15m\x1b[48;5;215m' + ('#' * (const.MAP_WIDTH + 2)) + '\x1b[0;97;40m')
 
 def room(roomChars: List[List[str]]):
 	for x in range(math.ceil(const.ROOM_WIDTH / 2)):

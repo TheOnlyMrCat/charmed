@@ -15,7 +15,7 @@ def mapToOutput(c: str) -> str:
 
 class Room:
 
-	def __init__(self, x, y, body = bodies.GENERIC):
+	def __init__(self, x, y, flags, body = bodies.GENERIC):
 		self.neighbours = [None, None, None, None]
 
 		self.x = x
@@ -24,7 +24,9 @@ class Room:
 		self.monsters = []
 		self.body = rd.choice(body)
 
-
+		self.exit = bool(flags & 0b100)
+		self.upstair = not self.exit and bool(flags & 0b010)
+		self.downstair = not (self.exit or self.upstair) and bool(flags & 0b001)
 
 	def getPrintBody(self):
 		return ''.join(map(lambda row: ''.join(map(mapToOutput, row)), self.body)) + '\x1b[0;97;40m'

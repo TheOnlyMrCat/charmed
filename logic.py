@@ -1,9 +1,11 @@
-import os
-
 from room import *
 from typing import List, Any
 from subprocess import Popen
+from pynput import keyboard
 
+import os
+import sys
+import select
 import random as randLib
 import render as rd
 import constants as const
@@ -71,7 +73,7 @@ def generateMap(difficulty, seed = randLib.seed):
 
 				log(currentLoc, newDir, lastRoomDir)
 
-				newRoom = Room(currentLoc[0], currentLoc[1], definitions.PATH)
+				newRoom = Room(currentLoc[0], currentLoc[1], 0, definitions.PATH)
 				currentMap[currentLoc[1]][currentLoc[0]] = newRoom
 
 				if lastRoom is not None:
@@ -119,7 +121,7 @@ def generateMap(difficulty, seed = randLib.seed):
 
 				log(currentLoc, newDir)
 
-				newRoom = Room(currentLoc[0], currentLoc[1], definitions.PATH)
+				newRoom = Room(currentLoc[0], currentLoc[1], 0, definitions.PATH)
 				currentMap[currentLoc[1]][currentLoc[0]] = newRoom
 
 				if lastRoom is not None:
@@ -136,15 +138,41 @@ def generateMap(difficulty, seed = randLib.seed):
 def roomToInt(room: Room, pos: List[int]) -> int:
 	i = 0
 	if room.x is pos[0] and room.y is pos[1]:
-		i = 0b10000000
+		i |= 0b10000000
+	if room.exit:
+		i |= 0b01000000
+	if room.upstair:
+		i |= 0b00100000
+	if room.downstair:
+		i |= 0b00010000
+	if room.neighbours[0]:
+		i |= 0b00001000
+	if room.neighbours[1]:
+		i |= 0b00000100
+	if room.neighbours[2]:
+		i |= 0b00000010
+	if room.neighbours[3]:
+		i |= 0b00000001
 
 	return i
+
+command = ''
+keyPressed = False
+
+def keyPress(key):
+	global keyPressed
+	if type(key) is keyboard.KeyCode and keyPressed is False:
+		global command
+		command = str(key.char)
+		keyPressed = True
 
 def playGame(gameMap):
 	health = const.START_HEALTH
 	armour = const.START_ARMOUR
 	attack = const.START_ATTACK
 	explored = []
+
+	global command, keyPressed
 
 	# Generate explored map
 	for y in range(len(gameMap)):
@@ -158,7 +186,10 @@ def playGame(gameMap):
 	depth = 0
 	currentDepth = gameMap[depth]
 	posRooms: List[int] = currentDepth[len(currentDepth) - 1][0]
-	posInt: List[int] = gameMap[posRooms[1]][posRooms[0]]
+	posInt: List[int] = currentDepth[posRooms[1]][posRooms[0]]
+
+	keyListener = keyboard.Listener(on_press = keyPress)
+	keyListener.start()
 
 	# Main loop
 	while True:
@@ -166,11 +197,16 @@ def playGame(gameMap):
 		rd.stats(health, armour, attack)
 
 		rd.rooms(list([
-			[roomToInt(gameMap[y][x]) if explored[y][x] else 0 for x in range(gameMap[y])]
-			for y in range(gameMap)
+			[roomToInt(gameMap[y][x], posRooms) if explored[y][x] else 0 for x in range(len(gameMap[y]))]
+			for y in range(len(gameMap))
 		]))
 
-		command = input("> ")
+		keyPressed = False
+		while keyPressed is False:
+			continue
+
+		if command == '>':
+			command = input(" ")[1:]
 
 		# Music commands
 		if command == 'mglvna':
@@ -194,9 +230,16 @@ def playGame(gameMap):
 		elif command == 'kkjjhlhlba':
 			pass
 
-		elif command == 'quit':
+		# Movement
+		elif command == 'g' or command == 'move':
+			key = select.select([sys.stdin], [], [])
+			while key != '\n':
+				key = select.select([sys.stdin], [], [])
+
+		elif command == 'q' or command == 'quit':
 			if track is not None:
 				track.terminate()
+			keyListener.stop()
 			return # Make this more than just a quit
 
 		if track is not None:
