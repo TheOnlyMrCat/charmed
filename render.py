@@ -95,48 +95,48 @@ def rooms(roomMap: List[List[int]]):
 					if e:
 						if s:
 							if w:
-								print('╋', end='') # N,E,S,W
+								print('\x1b[0;97;40m┼', end='') # N,E,S,W
 							else:
-								print('┣', end='') # N,E,S
+								print('\x1b[0;97;40m├', end='') # N,E,S
 						else:
 							if w:
-								print('┻', end='') # N,E,W
+								print('\x1b[0;97;40m┴', end='') # N,E,W
 							else:
-								print('┗', end='') # N,E
+								print('\x1b[0;97;40m└', end='') # N,E
 					else:
 						if s:
 							if w:
-								print('┫', end='') # N,S,W
+								print('\x1b[0;97;40m┤', end='') # N,S,W
 							else:
-								print('|', end='') # N,S
+								print('\x1b[0;97;40m|', end='') # N,S
 						else:
 							if w:
-								print('┛', end='') # N,W
+								print('┘', end='') # N,W
 							else:
-								print('↑', end='') # N
+								print('\x1b[0;97;40m|', end='') # N
 				elif e:
 					if s:
 						if w:
-							print('┳', end='') # E,S,W
+							print('\x1b[0;97;40m┬', end='') # E,S,W
 						else:
-							print('┏', end='') # E,S
+							print('\x1b[0;97;40m┌', end='') # E,S
 					else:
 						if w:
-							print('–', end='') # E,W
+							print('\x1b[0;97;40m–', end='') # E,W
 						else:
-							print('→', end='') # E
+							print('\x1b[0;97;40m–', end='') # E
 
 				elif s:
 					if w:
-						print('┓', end='') # S,W
+						print('\x1b[0;97;40m┐', end='') # S,W
 					else:
-						print('↓', end='') # S
+						print('\x1b[0;97;40m|', end='') # S
 
 				elif w:
-					print('←', end='') # W
+					print('\x1b[0;97;40m–', end='') # W
 
 				else:
-					print(' ', end='')
+					print('\x1b[0;97;40m ', end='') # Unexplored/Nonexistent
 		print('\x1b[38;5;15m\x1b[48;5;215m#')
 
 	print('\x1b[38;5;15m\x1b[48;5;215m' + ('#' * (const.MAP_WIDTH + 2)) + '\x1b[0;97;40m')
