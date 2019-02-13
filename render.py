@@ -73,7 +73,7 @@ def rooms(roomMap: List[List[int]]):
 
 	To show an unexplored room, set all bits to 0
 	"""
-	print('\x1b[38;5;15m\x1b[48;5;215m' + ('#' * (const.MAP_WIDTH + 1)))
+	print('\x1b[38;5;15m\x1b[48;5;215m' + ('#' * (const.MAP_WIDTH + 2)))
 
 	for y in roomMap:
 		print('\x1b[38;5;15m\x1b[48;5;215m#', end='')

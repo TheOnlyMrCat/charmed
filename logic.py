@@ -4,8 +4,6 @@ from subprocess import Popen
 from pynput import keyboard
 
 import os
-import sys
-import select
 import random as randLib
 import render as rd
 import constants as const
@@ -137,6 +135,7 @@ def generateMap(difficulty, seed = randLib.seed):
 
 def roomToInt(room: Room, pos: List[int]) -> int:
 	i = 0
+	if room is None: return i
 	if room.x is pos[0] and room.y is pos[1]:
 		i |= 0b10000000
 	if room.exit:
@@ -145,13 +144,13 @@ def roomToInt(room: Room, pos: List[int]) -> int:
 		i |= 0b00100000
 	if room.downstair:
 		i |= 0b00010000
-	if room.neighbours[0]:
+	if room.neighbours[0] is not None:
 		i |= 0b00001000
-	if room.neighbours[1]:
+	if room.neighbours[1] is not None:
 		i |= 0b00000100
-	if room.neighbours[2]:
+	if room.neighbours[2] is not None:
 		i |= 0b00000010
-	if room.neighbours[3]:
+	if room.neighbours[3] is not None:
 		i |= 0b00000001
 
 	return i
@@ -175,10 +174,12 @@ def playGame(gameMap):
 	global command, keyPressed
 
 	# Generate explored map
-	for y in range(len(gameMap)):
+	for d in range(len(gameMap)):
 		explored.append([])
-		for x in range(len(gameMap[y])):
-			explored[y].append(False)
+		for y in range(len(gameMap[d])):
+			explored[d].append([])
+			for x in range(len(gameMap[d][y])):
+				explored[d][y].append(const.DEBUG)
 
 	track: Popen = None
 	filePath = os.path.dirname(os.path.realpath(__file__))
@@ -196,10 +197,10 @@ def playGame(gameMap):
 		rd.header()
 		rd.stats(health, armour, attack)
 
-		rd.rooms(list([
-			[roomToInt(gameMap[y][x], posRooms) if explored[y][x] else 0 for x in range(len(gameMap[y]))]
-			for y in range(len(gameMap))
-		]))
+		rd.rooms([
+			[roomToInt(currentDepth[y][x], posRooms) if explored[depth][y][x] else 0 for x in range(len(currentDepth[y]))]
+			for y in range(len(currentDepth) - 1)
+		])
 
 		keyPressed = False
 		while keyPressed is False:
@@ -224,17 +225,36 @@ def playGame(gameMap):
 
 		# Cheat codes
 		elif command == 'winxp':
-			for y in range(len(explored)):
-				for x in range(len(explored[y])):
-					explored[y][x] = True
+			for d in range(len(explored)):
+				for y in range(len(explored[d])):
+					for x in range(len(explored[d][y])):
+						explored[d][y][x] = True
 		elif command == 'kkjjhlhlba':
 			pass
 
 		# Movement
 		elif command == 'g' or command == 'move':
-			key = select.select([sys.stdin], [], [])
-			while key != '\n':
-				key = select.select([sys.stdin], [], [])
+			while command != '\n':
+				keyPressed = False
+				while keyPressed is False:
+					continue
+
+				if command == 'h':
+					pass # Move left
+				elif command == 'j':
+					pass # Move down
+				elif command == 'k':
+					pass # Move up
+				elif command == 'l':
+					pass # Move right
+				elif command == 'y':
+					pass # Move up-left
+				elif command == 'u':
+					pass # Move up-right
+				elif command == 'b':
+					pass # Move down-left
+				elif command == 'n':
+					pass # Move down-right
 
 		elif command == 'q' or command == 'quit':
 			if track is not None:
