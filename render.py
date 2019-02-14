@@ -7,7 +7,8 @@ import subprocess
 def welcome():
 	header()
 	print('Welcome to charmed.')
-	print('Ensure your terminal window is full-screen')
+	print('Ensure your terminal window is full-screen.')
+	print('When the game starts, do not switch to another window without suspending the game by pressing "s"')
 	return input('Press enter to continue. ')
 
 def difficulty():
@@ -41,6 +42,11 @@ def tutorial():
 	print('                          "d" to set difficulty')
 	print('                          "s" to set seed')
 	print()
+	input('Press enter to continue.')
+
+def suspend():
+	header()
+	print('Game suspended.')
 	input('Press enter to continue.')
 
 def header():
@@ -81,7 +87,7 @@ def rooms(roomMap: List[List[int]]):
 			if c & 0b10000000:
 				print('\x1b[0;33;103m@', end='')
 			elif c & 0b01000000:
-				print('\x1b[0;35;105m⌘', end='')
+				print('\x1b[0;35;105mX', end='')
 			elif c & 0b00100000:
 				print('\x1b[0;33;103m<', end='')
 			elif c & 0b00010000:
@@ -108,12 +114,12 @@ def rooms(roomMap: List[List[int]]):
 							if w:
 								print('\x1b[0;97;40m┤', end='') # N,S,W
 							else:
-								print('\x1b[0;97;40m|', end='') # N,S
+								print('\x1b[0;97;40m│', end='') # N,S
 						else:
 							if w:
 								print('┘', end='') # N,W
 							else:
-								print('\x1b[0;97;40m|', end='') # N
+								print('\x1b[0;97;40m│', end='') # N
 				elif e:
 					if s:
 						if w:
@@ -122,18 +128,18 @@ def rooms(roomMap: List[List[int]]):
 							print('\x1b[0;97;40m┌', end='') # E,S
 					else:
 						if w:
-							print('\x1b[0;97;40m–', end='') # E,W
+							print('\x1b[0;97;40m─', end='') # E,W
 						else:
-							print('\x1b[0;97;40m–', end='') # E
+							print('\x1b[0;97;40m─', end='') # E
 
 				elif s:
 					if w:
 						print('\x1b[0;97;40m┐', end='') # S,W
 					else:
-						print('\x1b[0;97;40m|', end='') # S
+						print('\x1b[0;97;40m│', end='') # S
 
 				elif w:
-					print('\x1b[0;97;40m–', end='') # W
+					print('\x1b[0;97;40m─', end='') # W
 
 				else:
 					print('\x1b[0;97;40m ', end='') # Unexplored/Nonexistent

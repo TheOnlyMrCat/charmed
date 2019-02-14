@@ -37,15 +37,20 @@ def generateMap(difficulty, seed = randLib.seed):
 			beginLoc = (0 if beginSide is 4 else const.MAP_WIDTH - 1, rand(0, const.MAP_HEIGHT - 1))
 			endLoc   = (0 if endSide   is 4 else const.MAP_WIDTH - 1, rand(0, const.MAP_HEIGHT - 1))
 
+			currentMap[beginLoc[1]][beginLoc[0]] = Room(beginLoc[0], beginLoc[1], 4 if depth is 0 else 2)
+			currentMap[endLoc[1]][endLoc[0]] = Room(endLoc[0], endLoc[1], 1, bodies.DOWNSTAIR)
+
 			currentMap.append([beginLoc, endLoc])
 
 			currentLoc: List[int] = [beginLoc[0], beginLoc[1]] if beginSide is 4 else [endLoc[0], endLoc[1]]
 			finLoc = [endLoc[0], endLoc[1]] if endSide is 2 else [beginLoc[0], beginLoc[1]]
 
+			finRoom: Room = currentMap[finLoc[1]][finLoc[0]]
+
 			log(currentLoc)
 			log(finLoc)
 
-			lastRoom = None
+			lastRoom = currentMap[currentLoc[1]][currentLoc[0]]
 			lastRoomDir = 2
 			while not (currentLoc[0] == finLoc[0] and currentLoc[1] == finLoc[1]):
 				if currentLoc[0] is const.MAP_WIDTH - 1: # If on the opposite edge
@@ -69,31 +74,39 @@ def generateMap(difficulty, seed = randLib.seed):
 				else:
 					raise IndexError('Unexpected map generation error')
 
-				log(currentLoc, newDir, lastRoomDir)
+				log(currentLoc)
 
-				newRoom = Room(currentLoc[0], currentLoc[1], 0, definitions.PATH)
-				currentMap[currentLoc[1]][currentLoc[0]] = newRoom
-
-				if lastRoom is not None:
+				if not (currentLoc[0] == finLoc[0] and currentLoc[1] == finLoc[1]):
+					newRoom = Room(currentLoc[0], currentLoc[1], 0, definitions.PATH)
+					currentMap[currentLoc[1]][currentLoc[0]] = newRoom
 					lastRoom.neighbours[newDir - 1] = newRoom
 					newRoom.neighbours[(newDir + 2) % 4 - 1] = lastRoom
 
-				lastRoom = newRoom
-				lastRoomDir = newDir
+					lastRoom = newRoom
+					lastRoomDir = newDir
+				else:
+					lastRoom.neighbours[newDir - 1] = finRoom
+					finRoom.neighbours[(newDir + 2) % 4 - 1] = lastRoom
 
 		else:
 			beginLoc = (rand(0, const.MAP_WIDTH - 1), 0 if beginSide is 1 else const.MAP_HEIGHT - 1)
 			endLoc   = (rand(0, const.MAP_WIDTH - 1), 0 if endSide   is 1 else const.MAP_HEIGHT - 1)
+
+			currentMap[beginLoc[1]][beginLoc[0]] = Room(beginLoc[0], beginLoc[1], 4 if depth is 0 else 2, bodies.EXIT if depth is 0 else bodies.UPSTAIR)
+			currentMap[endLoc[1]][endLoc[0]] = Room(endLoc[0], endLoc[1], 1 if depth is not const.MAX_DEPTH else 0,
+													bodies.DOWNSTAIR if depth is not const.MAX_DEPTH else bodies.CHARM)
 
 			currentMap.append([beginLoc, endLoc])
 
 			currentLoc = [beginLoc[0], beginLoc[1]] if beginSide is 1 else [endLoc[0], endLoc[1]]
 			finLoc = [endLoc[0], endLoc[1]] if endSide is 3 else [beginLoc[0], beginLoc[1]]
 
+			finRoom: Room = currentMap[finLoc[1]][finLoc[0]]
+
 			log(currentLoc)
 			log(finLoc)
 
-			lastRoom = None
+			lastRoom = currentMap[currentLoc[1]][currentLoc[0]]
 			lastRoomDir = 3
 			while not (currentLoc[0] == finLoc[0] and currentLoc[1] == finLoc[1]):
 				if currentLoc[1] is const.MAP_HEIGHT - 1:  # If on the opposite edge
@@ -117,17 +130,19 @@ def generateMap(difficulty, seed = randLib.seed):
 				else:
 					raise IndexError('Unexpected map generation error')
 
-				log(currentLoc, newDir)
+				log(currentLoc)
 
-				newRoom = Room(currentLoc[0], currentLoc[1], 0, definitions.PATH)
-				currentMap[currentLoc[1]][currentLoc[0]] = newRoom
-
-				if lastRoom is not None:
+				if not (currentLoc[0] == finLoc[0] and currentLoc[1] == finLoc[1]):
+					newRoom = Room(currentLoc[0], currentLoc[1], 0, definitions.PATH)
+					currentMap[currentLoc[1]][currentLoc[0]] = newRoom
 					lastRoom.neighbours[newDir - 1] = newRoom
 					newRoom.neighbours[(newDir + 2) % 4 - 1] = lastRoom
 
-				lastRoom = newRoom
-				lastRoomDir = newDir
+					lastRoom = newRoom
+					lastRoomDir = newDir
+				else:
+					lastRoom.neighbours[newDir - 1] = finRoom
+					finRoom.neighbours[(newDir + 2) % 4 - 1] = lastRoom
 
 		generatedMap.append(currentMap)
 
@@ -136,8 +151,8 @@ def generateMap(difficulty, seed = randLib.seed):
 def roomToInt(room: Room, pos: List[int]) -> int:
 	i = 0
 	if room is None: return i
-	if room.x is pos[0] and room.y is pos[1]:
-		i |= 0b10000000
+	# if room.x is pos[0] and room.y is pos[1]:
+	# 	i |= 0b10000000
 	if room.exit:
 		i |= 0b01000000
 	if room.upstair:
@@ -159,9 +174,8 @@ command = ''
 keyPressed = False
 
 def keyPress(key):
-	global keyPressed
+	global command, keyPressed
 	if type(key) is keyboard.KeyCode and keyPressed is False:
-		global command
 		command = str(key.char)
 		keyPressed = True
 
@@ -260,7 +274,16 @@ def playGame(gameMap):
 			if track is not None:
 				track.terminate()
 			keyListener.stop()
-			return # Make this more than just a quit
+			return # TODO: Make this more than just a quit
+
+		elif const.DEBUG:
+			if command.startswith('d'):
+				try:
+					depth = int(command[1:])
+					currentDepth = gameMap[depth]
+					posRooms = currentDepth[len(currentDepth) - 1][0]
+				except Exception:
+					pass
 
 		if track is not None:
 			if track.poll() is not None:
