@@ -29,4 +29,4 @@ class Room:
 		self.downstair = not (self.exit or self.upstair) and bool(flags & 0b001)
 
 	def getPrintBody(self):
-		return ''.join(map(lambda row: ''.join(map(mapToOutput, row)), self.body)) + '\x1b[0;97;40m'
+		return [[mapToOutput(char) for char in row] for row in self.body]

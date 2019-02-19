@@ -33,6 +33,8 @@ def generateMap(difficulty, seed = randLib.seed):
 		beginSide = rand(1, 4) if depth is not 0 else 3
 		endSide = (beginSide + 1) % 4 + 1
 
+		roomsToRandomise: List[Room] = []
+
 		if beginSide % 2 is 0:
 			beginLoc = (0 if beginSide is 4 else const.MAP_WIDTH - 1, rand(0, const.MAP_HEIGHT - 1))
 			endLoc   = (0 if endSide   is 4 else const.MAP_WIDTH - 1, rand(0, const.MAP_HEIGHT - 1))
@@ -151,8 +153,8 @@ def generateMap(difficulty, seed = randLib.seed):
 def roomToInt(room: Room, pos: List[int]) -> int:
 	i = 0
 	if room is None: return i
-	# if room.x is pos[0] and room.y is pos[1]:
-	# 	i |= 0b10000000
+	if room.x is pos[0] and room.y is pos[1]:
+		i |= 0b10000000
 	if room.exit:
 		i |= 0b01000000
 	if room.upstair:
@@ -216,6 +218,10 @@ def playGame(gameMap):
 			for y in range(len(currentDepth) - 1)
 		])
 
+		print()
+
+		rd.room(currentDepth[posRooms[1]][posRooms[0]])
+
 		keyPressed = False
 		while keyPressed is False:
 			continue
@@ -254,7 +260,11 @@ def playGame(gameMap):
 					continue
 
 				if command == 'h':
-					pass # Move left
+					if posInt[0] > 0:
+						posInt[0] -= 1
+					elif posInt[1] == const.ROOM_HEIGHT / 2 - 1 and currentDepth[posRooms[1]][posRooms[0]].neighbours[3] is not None:
+						posInt[0] = const.ROOM_WIDTH - 1
+						posRooms[0] -= 1
 				elif command == 'j':
 					pass # Move down
 				elif command == 'k':

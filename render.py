@@ -4,6 +4,9 @@ import math
 import constants as const
 import subprocess
 
+from room import Room
+
+
 def welcome():
 	header()
 	print('Welcome to charmed.')
@@ -147,10 +150,11 @@ def rooms(roomMap: List[List[int]]):
 
 	print('\x1b[38;5;15m\x1b[48;5;215m' + ('#' * (const.MAP_WIDTH + 2)) + '\x1b[0;97;40m')
 
-def room(roomChars: List[List[str]]):
+def room(room: Room):
+	roomChars = room.getPrintBody()
 	for x in range(math.ceil(const.ROOM_WIDTH / 2)):
 		print('\x1b[38;5;15m\x1b[48;5;215m#', end='')
-	print('\x1b[0;97;40m.', end='')
+	print('\x1b[0;97;40m.' if room.neighbours[0] is not None else '\x1b[38;5;15m\x1b[48;5;215m#', end='')
 	for x in range(math.ceil(const.ROOM_WIDTH / 2)):
 		print('\x1b[38;5;15m\x1b[48;5;215m#', end='')
 	print()
@@ -158,18 +162,20 @@ def room(roomChars: List[List[str]]):
 	exitPrinted = False
 
 	for y in range(len(roomChars)):
-		print('\x1b[0;97;40m.' if y > const.ROOM_HEIGHT / 2 and not exitPrinted else '\x1b[38;5;15m\x1b[48;5;215m#', end='')
-		for x in range(len(roomChars[y])):
-			print(roomChars[y][x], end='')
-		print('\x1b[0;97;40m.' if y > const.ROOM_HEIGHT / 2 and not exitPrinted else '\x1b[38;5;15m\x1b[48;5;215m#')
-		if y > const.ROOM_HEIGHT / 2:
+		print('\x1b[0;97;40m.' if room.neighbours[3] is not None and (y > const.ROOM_HEIGHT / 2 - 1 and not exitPrinted) else '\x1b[38;5;15m\x1b[48;5;215m#', end='')
+		for c in roomChars[y]:
+			print(c, end='')
+		print('\x1b[0;97;40m.' if room.neighbours[1] is not None and (y > const.ROOM_HEIGHT / 2 - 1 and not exitPrinted) else '\x1b[38;5;15m\x1b[48;5;215m#')
+		if y > const.ROOM_HEIGHT / 2 - 1:
 			exitPrinted = True
 
 	for x in range(math.ceil(const.ROOM_WIDTH / 2)):
 		print('\x1b[38;5;15m\x1b[48;5;215m#', end='')
-	print('\x1b[0;97;40m.', end='')
+	print('\x1b[0;97;40m.' if room.neighbours[2] is not None else '\x1b[38;5;15m\x1b[48;5;215m#', end='')
 	for x in range(math.ceil(const.ROOM_WIDTH / 2)):
 		print('\x1b[38;5;15m\x1b[48;5;215m#', end='')
+
+	print('\x1b[0;97;40m')
 
 def items(itemList: List[str]):
 	print("Items: ", end='')
