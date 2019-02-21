@@ -1,17 +1,20 @@
-import random as rd
+import random
+import render as rd
 import room.definitions as bodies
 
 def mapToOutput(c: str) -> str:
 	if c == 'w':
-		return '\x1b[0;97;104m.' # White '.' on bright blue
+		return rd.shallow # White '.' on bright blue
 	elif c == 'W':
-		return '\x1b[0;94;44m~' # Bright blue '~' on blue
+		return rd.water # Bright blue '~' on blue
 	elif c == 'l':
-		return '\x1b[38;5;202m\x1b[48;5;208m~' # Dark orange '~' on orange
+		return rd.lava # Dark orange '~' on orange
 	elif c == '"':
-		return '\x1b[0;32;40m"' # Green '"' on black
+		return rd.grass # Green '"' on black
+	elif c == '#':
+		return rd.wall # White '#' on light brown
 	else:
-		return '\x1b[0;97;40m' + c
+		return rd.blankf + c[0]
 
 class Room:
 
@@ -22,11 +25,21 @@ class Room:
 		self.y = y
 
 		self.monsters = []
-		self.body = rd.choice(body)
+		self.body = random.choice(body)
 
 		self.exit = bool(flags & 0b100)
 		self.upstair = not self.exit and bool(flags & 0b010)
 		self.downstair = not (self.exit or self.upstair) and bool(flags & 0b001)
+
+		self.entryPoint = self.findEntryPoint()
+
+	def findEntryPoint(self):
+		for row in range(len(self.body)):
+			for cell in range(len(self.body[row])):
+				if '!' in self.body[row][cell]:
+					return cell, row
+		return None
+
 
 	def getPrintBody(self):
 		return [[mapToOutput(char) for char in row] for row in self.body]

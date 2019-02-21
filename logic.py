@@ -86,9 +86,14 @@ def generateMap(difficulty, seed = randLib.seed):
 
 					lastRoom = newRoom
 					lastRoomDir = newDir
+
+					roomsToRandomise.append(newRoom)
 				else:
 					lastRoom.neighbours[newDir - 1] = finRoom
 					finRoom.neighbours[(newDir + 2) % 4 - 1] = lastRoom
+
+					roomsToRandomise.append(finRoom)
+
 
 		else:
 			beginLoc = (rand(0, const.MAP_WIDTH - 1), 0 if beginSide is 1 else const.MAP_HEIGHT - 1)
@@ -201,9 +206,10 @@ def playGame(gameMap):
 	filePath = os.path.dirname(os.path.realpath(__file__))
 
 	depth = 0
-	currentDepth = gameMap[depth]
-	posRooms: List[int] = currentDepth[len(currentDepth) - 1][0]
-	posInt: List[int] = currentDepth[posRooms[1]][posRooms[0]]
+	moveMode = False
+	currentDepth: List[List[Room]] = gameMap[depth]
+	posRooms: List[int] = list(currentDepth[len(currentDepth) - 1][0])
+	posInt: List[int] = list(currentDepth[posRooms[1]][posRooms[0]].entryPoint)
 
 	keyListener = keyboard.Listener(on_press = keyPress)
 	keyListener.start()
@@ -220,7 +226,9 @@ def playGame(gameMap):
 
 		print()
 
-		rd.room(currentDepth[posRooms[1]][posRooms[0]])
+		roomChars = currentDepth[posRooms[1]][posRooms[0]]
+
+		rd.room(roomChars, posInt)
 
 		keyPressed = False
 		while keyPressed is False:
@@ -229,14 +237,7 @@ def playGame(gameMap):
 		if command == '>':
 			command = input(" ")[1:]
 
-		# Music commands
-		if command == 'mglvna':
-			if track is not None:
-				track.terminate()
-
-			# Megalovania but every other beat was removed
-			track = Popen(['/usr/bin/afplay', filePath + '/data/msc(idn.mp3'])
-		elif command == 'megalovania':
+		if command == 'megalovania':
 			if track is not None:
 				track.terminate()
 
@@ -253,37 +254,46 @@ def playGame(gameMap):
 			pass
 
 		# Movement
-		elif command == 'g' or command == 'move':
-			while command != '\n':
-				keyPressed = False
-				while keyPressed is False:
-					continue
-
-				if command == 'h':
-					if posInt[0] > 0:
-						posInt[0] -= 1
-					elif posInt[1] == const.ROOM_HEIGHT / 2 - 1 and currentDepth[posRooms[1]][posRooms[0]].neighbours[3] is not None:
-						posInt[0] = const.ROOM_WIDTH - 1
-						posRooms[0] -= 1
-				elif command == 'j':
-					pass # Move down
-				elif command == 'k':
-					pass # Move up
-				elif command == 'l':
-					pass # Move right
-				elif command == 'y':
-					pass # Move up-left
-				elif command == 'u':
-					pass # Move up-right
-				elif command == 'b':
-					pass # Move down-left
-				elif command == 'n':
-					pass # Move down-right
+		elif command == 'h':
+			if posInt[0] > 0 and currentDepth[posRooms[1]][posRooms[0]].body[posInt[1]][posInt[0] - 1] != '#':
+				posInt[0] -= 1
+			elif posInt[1] == int(const.ROOM_HEIGHT / 2) and currentDepth[posRooms[1]][posRooms[0]].neighbours[3] is not None:
+				posInt[0] = const.ROOM_WIDTH - 1
+				posRooms[0] -= 1
+		elif command == 'j':
+			if posInt[1] < const.ROOM_HEIGHT and currentDepth[posRooms[1]][posRooms[0]].body[posInt[1] + 1][posInt[0]] != '#':
+				posInt[1] += 1
+			elif posInt[0] == int(const.ROOM_WIDTH / 2) and currentDepth[posRooms[1]][posRooms[0]].neighbours[2] is not None:
+				posInt[1] = 0
+				posRooms[1] += 1
+		elif command == 'k':
+			if posInt[1] > 0 and currentDepth[posRooms[1]][posRooms[0]].body[posInt[1] - 1][posInt[0]] != '#':
+				posInt[1] -= 1
+			elif posInt[0] == int(const.ROOM_WIDTH / 2) and currentDepth[posRooms[1]][posRooms[0]].neighbours[0] is not None:
+				posInt[1] = const.ROOM_HEIGHT - 1
+				posRooms[1] -= 1
+		elif command == 'l':
+			if posInt[0] < const.ROOM_WIDTH - 1 and currentDepth[posRooms[1]][posRooms[0]].body[posInt[1]][posInt[0] + 1] != '#':
+				posInt[0] += 1
+			elif posInt[1] == int(const.ROOM_HEIGHT / 2) and currentDepth[posRooms[1]][posRooms[0]].neighbours[1] is not None:
+				posInt[0] = 0
+				posRooms[0] += 1
+		elif command == 'y':
+			pass # Move up-left
+		elif command == 'u':
+			pass # Move up-right
+		elif command == 'b':
+			pass # Move down-left
+		elif command == 'n':
+			pass # Move down-right
 
 		elif command == 'q' or command == 'quit':
 			if track is not None:
 				track.terminate()
 			keyListener.stop()
+			rd.header()
+			print('Thanks for playing!')
+			input('Press enter to continue.')
 			return # TODO: Make this more than just a quit
 
 		elif const.DEBUG:

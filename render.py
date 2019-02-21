@@ -6,6 +6,32 @@ import subprocess
 
 from room import Room
 
+blankf = '\x1b[0;97;40m'
+floor = blankf + '.'
+
+wallf = '\x1b[38;5;15m\x1b[48;5;215m'
+wall = wallf + '#'
+
+shallowf = '\x1b[0;97;46m'
+shallow = shallowf + '.'
+
+waterf = '\x1b[0;94;44m'
+water = waterf + '~'
+
+lavaf = '\x1b[38;5;202m\x1b[48;5;208m'
+lava = lavaf + '~'
+
+grassf = '\x1b[0;32;40m'
+grass = grassf + '"'
+
+locf = '\x1b[0;33;103m'
+player = locf + '@'
+downstair = locf + '>'
+upstair = locf + '<'
+
+exitf = '\x1b[0;35;105m'
+exit = exitf + 'X'
+
 
 def welcome():
 	header()
@@ -33,13 +59,13 @@ def generating(seedVal = None):
 def tutorial():
 	header()
 	print('          \x1b[48;5;91my\x1b[48;5;196mk\x1b[38;5;0m\x1b[48;5;208mu')
-	print('\x1b[0;97;40mMovement: \x1b[48;5;21mh\x1b[0;97;40m \x1b[38;5;0m\x1b[48;5;226ml\x1b[0;97;40m')
+	print(blankf + 'Movement: \x1b[48;5;21mh\x1b[0;97;40m \x1b[38;5;0m\x1b[48;5;226ml\x1b[0;97;40m')
 	print('          \x1b[48;5;29mb\x1b[38;5;0m\x1b[48;5;46mj\x1b[48;5;154mn\x1b[0;97;40m')
 	print()
 	print('          \x1b[48;5;91my\x1b[48;5;208mu\x1b[0;97;40m')
 	print('          \x1b[48;5;21mh\x1b[38;5;0m\x1b[48;5;46mj\x1b[38;5;15m\x1b[48;5;196mk\x1b[38;5;0m\x1b[48;5;226ml\x1b[0;97;40m')
 	print('          \x1b[48;5;29mb\x1b[38;5;0m\x1b[48;5;154mn')
-	print('\x1b[0;97;40m')
+	print(blankf + '')
 	print('Press "?" at any time for help.')
 	print('Commands on startup text: "\'" to skip tutorial')
 	print('                          "d" to set difficulty')
@@ -54,7 +80,7 @@ def suspend():
 
 def header():
 	subprocess.call('clear')
-	print('\x1b[0;97;40m', end='')
+	print(blankf + '', end='')
 	print('=============== Charmed ===============')
 
 def stats(health, armour, attack):
@@ -85,97 +111,99 @@ def rooms(roomMap: List[List[int]]):
 	print('\x1b[38;5;15m\x1b[48;5;215m' + ('#' * (const.MAP_WIDTH + 2)))
 
 	for y in roomMap:
-		print('\x1b[38;5;15m\x1b[48;5;215m#', end='')
+		print(wall, end='')
 		for c in y:
 			if c & 0b10000000:
-				print('\x1b[0;33;103m@', end='')
+				print(player, end='')
 			elif c & 0b01000000:
-				print('\x1b[0;35;105mX', end='')
+				print(exit, end='')
 			elif c & 0b00100000:
-				print('\x1b[0;33;103m<', end='')
+				print(upstair, end='')
 			elif c & 0b00010000:
-				print('\x1b[0;33;103m>', end='')
+				print(downstair, end='')
 			else:
-				n = c & 0b00001000 == 8
-				e = c & 0b00000100 == 4
-				s = c & 0b00000010 == 2
-				w = c & 0b00000001 == 1
+				n = bool(c & 0b00001000)
+				e = bool(c & 0b00000100)
+				s = bool(c & 0b00000010)
+				w = bool(c & 0b00000001)
 				if n:
 					if e:
 						if s:
 							if w:
-								print('\x1b[0;97;40m┼', end='') # N,E,S,W
+								print(blankf + '┼', end='') # N,E,S,W
 							else:
-								print('\x1b[0;97;40m├', end='') # N,E,S
+								print(blankf + '├', end='') # N,E,S
 						else:
 							if w:
-								print('\x1b[0;97;40m┴', end='') # N,E,W
+								print(blankf + '┴', end='') # N,E,W
 							else:
-								print('\x1b[0;97;40m└', end='') # N,E
+								print(blankf + '└', end='') # N,E
 					else:
 						if s:
 							if w:
-								print('\x1b[0;97;40m┤', end='') # N,S,W
+								print(blankf + '┤', end='') # N,S,W
 							else:
-								print('\x1b[0;97;40m│', end='') # N,S
+								print(blankf + '│', end='') # N,S
 						else:
 							if w:
-								print('┘', end='') # N,W
+								print(blankf + '┘', end='') # N,W
 							else:
-								print('\x1b[0;97;40m│', end='') # N
+								print(blankf + '│', end='') # N
 				elif e:
 					if s:
 						if w:
-							print('\x1b[0;97;40m┬', end='') # E,S,W
+							print(blankf + '┬', end='') # E,S,W
 						else:
-							print('\x1b[0;97;40m┌', end='') # E,S
+							print(blankf + '┌', end='') # E,S
 					else:
 						if w:
-							print('\x1b[0;97;40m─', end='') # E,W
+							print(blankf + '─', end='') # E,W
 						else:
-							print('\x1b[0;97;40m─', end='') # E
+							print(blankf + '─', end='') # E
 
 				elif s:
 					if w:
-						print('\x1b[0;97;40m┐', end='') # S,W
+						print(blankf + '┐', end='') # S,W
 					else:
-						print('\x1b[0;97;40m│', end='') # S
+						print(blankf + '│', end='') # S
 
 				elif w:
-					print('\x1b[0;97;40m─', end='') # W
+					print(blankf + '─', end='') # W
 
 				else:
-					print('\x1b[0;97;40m ', end='') # Unexplored/Nonexistent
-		print('\x1b[38;5;15m\x1b[48;5;215m#')
+					print(blankf + ' ', end='') # Unexplored/Nonexistent
+		print(wall)
 
-	print('\x1b[38;5;15m\x1b[48;5;215m' + ('#' * (const.MAP_WIDTH + 2)) + '\x1b[0;97;40m')
+	print(wallf + ('#' * (const.MAP_WIDTH + 2)) + blankf)
 
-def room(room: Room):
-	roomChars = room.getPrintBody()
+def room(printRoom: Room, playerPos: List[int]):
+	roomChars = printRoom.getPrintBody()
+	roomChars[playerPos[1]][playerPos[0]] = player
+
 	for x in range(math.ceil(const.ROOM_WIDTH / 2)):
-		print('\x1b[38;5;15m\x1b[48;5;215m#', end='')
-	print('\x1b[0;97;40m.' if room.neighbours[0] is not None else '\x1b[38;5;15m\x1b[48;5;215m#', end='')
+		print(wall, end='')
+	print(floor if printRoom.neighbours[0] is not None else wall, end='')
 	for x in range(math.ceil(const.ROOM_WIDTH / 2)):
-		print('\x1b[38;5;15m\x1b[48;5;215m#', end='')
+		print(wall, end='')
 	print()
 
 	exitPrinted = False
 
 	for y in range(len(roomChars)):
-		print('\x1b[0;97;40m.' if room.neighbours[3] is not None and (y > const.ROOM_HEIGHT / 2 - 1 and not exitPrinted) else '\x1b[38;5;15m\x1b[48;5;215m#', end='')
+		print(floor if printRoom.neighbours[3] is not None and (y > const.ROOM_HEIGHT / 2 - 1 and not exitPrinted) else wall, end='')
 		for c in roomChars[y]:
 			print(c, end='')
-		print('\x1b[0;97;40m.' if room.neighbours[1] is not None and (y > const.ROOM_HEIGHT / 2 - 1 and not exitPrinted) else '\x1b[38;5;15m\x1b[48;5;215m#')
+		print(floor if printRoom.neighbours[1] is not None and (y > const.ROOM_HEIGHT / 2 - 1 and not exitPrinted) else wall)
 		if y > const.ROOM_HEIGHT / 2 - 1:
 			exitPrinted = True
 
 	for x in range(math.ceil(const.ROOM_WIDTH / 2)):
-		print('\x1b[38;5;15m\x1b[48;5;215m#', end='')
-	print('\x1b[0;97;40m.' if room.neighbours[2] is not None else '\x1b[38;5;15m\x1b[48;5;215m#', end='')
+		print(wall, end='')
+	print(floor if printRoom.neighbours[2] is not None else wall, end='')
 	for x in range(math.ceil(const.ROOM_WIDTH / 2)):
-		print('\x1b[38;5;15m\x1b[48;5;215m#', end='')
+		print(wall, end='')
 
-	print('\x1b[0;97;40m')
+	print(blankf)
 
 def items(itemList: List[str]):
 	print("Items: ", end='')
