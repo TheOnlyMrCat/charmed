@@ -1,6 +1,7 @@
 import render
 import constants as const
 import logic
+import subprocess
 
 def main():
 	opts = render.welcome()
@@ -18,6 +19,7 @@ def main():
 		gameMap = logic.generateMap(difficulty)
 
 	logic.playGame(gameMap)
+	render.thankyou()
 
 if __name__ == "__main__":
 	main()

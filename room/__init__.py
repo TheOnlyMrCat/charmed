@@ -1,3 +1,6 @@
+from typing import Dict, List
+from objects.item import Item
+
 import random
 import render as rd
 import room.definitions as bodies
@@ -18,25 +21,25 @@ def mapToOutput(c: str) -> str:
 
 class Room:
 
-	def __init__(self, x, y, flags, body = bodies.GENERIC):
+	def __init__(self, x, y, body = bodies.GENERIC):
 		self.neighbours = [None, None, None, None]
 
 		self.x = x
 		self.y = y
 
-		self.monsters = []
+		self.items: Dict[List[int, int], Item] = []
 		self.body = random.choice(body)
 
-		self.exit = bool(flags & 0b100)
-		self.upstair = not self.exit and bool(flags & 0b010)
-		self.downstair = not (self.exit or self.upstair) and bool(flags & 0b001)
+		self.exit = self.findChar('x')
+		self.upstair = self.findChar('<')
+		self.downstair = self.findChar('>')
 
-		self.entryPoint = self.findEntryPoint()
+		self.entryPoint = self.findChar('!')
 
-	def findEntryPoint(self):
+	def findChar(self, char):
 		for row in range(len(self.body)):
 			for cell in range(len(self.body[row])):
-				if '!' in self.body[row][cell]:
+				if char in self.body[row][cell]:
 					return cell, row
 		return None
 

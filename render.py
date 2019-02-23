@@ -24,10 +24,12 @@ lava = lavaf + '~'
 grassf = '\x1b[0;32;40m'
 grass = grassf + '"'
 
-locf = '\x1b[0;33;103m'
-player = locf + '@'
-downstair = locf + '>'
-upstair = locf + '<'
+playerf = '\x1b[0;33;40m'
+player = playerf + '@'
+
+stairf = '\x1b[0;33;103m'
+downstair = stairf + '>'
+upstair = stairf + '<'
 
 exitf = '\x1b[0;35;105m'
 exit = exitf + 'X'
@@ -211,3 +213,11 @@ def items(itemList: List[str]):
 		print(item, end='\n       ') # End is to line up list
 
 	print()
+
+def highscores(scores):
+	header()
+
+def thankyou():
+	header()
+	print('Thanks for playing!')
+	input('Press enter to continue.')

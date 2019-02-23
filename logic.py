@@ -4,6 +4,7 @@ from subprocess import Popen
 from pynput import keyboard
 
 import os
+import fileio as io
 import random as randLib
 import render as rd
 import constants as const
@@ -23,12 +24,14 @@ def generateMap(difficulty, seed = randLib.seed):
 	for depth in range(const.MAX_DEPTH):
 		currentMap: List[List[Any]] = []
 
+		log('Depth', depth)
 		# Generate the indices for this depth
-		for y in range(const.MAP_HEIGHT):
+		for row in range(const.MAP_HEIGHT):
 			currentMap.append([])
-			for x in range(const.MAP_WIDTH):
-				currentMap[y].append(None)
+			for room in range(const.MAP_WIDTH):
+				currentMap[row].append(None)
 
+		log('Path')
 		# 1 = N, 2 = E, 3 = S, 4 = W
 		beginSide = rand(1, 4) if depth is not 0 else 3
 		endSide = (beginSide + 1) % 4 + 1
@@ -39,8 +42,8 @@ def generateMap(difficulty, seed = randLib.seed):
 			beginLoc = (0 if beginSide is 4 else const.MAP_WIDTH - 1, rand(0, const.MAP_HEIGHT - 1))
 			endLoc   = (0 if endSide   is 4 else const.MAP_WIDTH - 1, rand(0, const.MAP_HEIGHT - 1))
 
-			currentMap[beginLoc[1]][beginLoc[0]] = Room(beginLoc[0], beginLoc[1], 4 if depth is 0 else 2)
-			currentMap[endLoc[1]][endLoc[0]] = Room(endLoc[0], endLoc[1], 1, bodies.DOWNSTAIR)
+			currentMap[beginLoc[1]][beginLoc[0]] = Room(beginLoc[0], beginLoc[1], bodies.EXIT if depth is 0 else bodies.UPSTAIR)
+			currentMap[endLoc[1]][endLoc[0]] = Room(endLoc[0], endLoc[1], bodies.DOWNSTAIR if depth is not const.MAX_DEPTH else bodies.CHARM)
 
 			currentMap.append([beginLoc, endLoc])
 
@@ -54,6 +57,9 @@ def generateMap(difficulty, seed = randLib.seed):
 
 			lastRoom = currentMap[currentLoc[1]][currentLoc[0]]
 			lastRoomDir = 2
+
+			roomsToRandomise.append(lastRoom)
+
 			while not (currentLoc[0] == finLoc[0] and currentLoc[1] == finLoc[1]):
 				if currentLoc[0] is const.MAP_WIDTH - 1: # If on the opposite edge
 					possibleDirs = [3 if currentLoc[1] < finLoc[1] else 1] # Move up or down only depending on where we are in relation to the exit
@@ -79,7 +85,7 @@ def generateMap(difficulty, seed = randLib.seed):
 				log(currentLoc)
 
 				if not (currentLoc[0] == finLoc[0] and currentLoc[1] == finLoc[1]):
-					newRoom = Room(currentLoc[0], currentLoc[1], 0, definitions.PATH)
+					newRoom = Room(currentLoc[0], currentLoc[1], definitions.PATH)
 					currentMap[currentLoc[1]][currentLoc[0]] = newRoom
 					lastRoom.neighbours[newDir - 1] = newRoom
 					newRoom.neighbours[(newDir + 2) % 4 - 1] = lastRoom
@@ -93,15 +99,12 @@ def generateMap(difficulty, seed = randLib.seed):
 					finRoom.neighbours[(newDir + 2) % 4 - 1] = lastRoom
 
 					roomsToRandomise.append(finRoom)
-
-
 		else:
 			beginLoc = (rand(0, const.MAP_WIDTH - 1), 0 if beginSide is 1 else const.MAP_HEIGHT - 1)
 			endLoc   = (rand(0, const.MAP_WIDTH - 1), 0 if endSide   is 1 else const.MAP_HEIGHT - 1)
 
-			currentMap[beginLoc[1]][beginLoc[0]] = Room(beginLoc[0], beginLoc[1], 4 if depth is 0 else 2, bodies.EXIT if depth is 0 else bodies.UPSTAIR)
-			currentMap[endLoc[1]][endLoc[0]] = Room(endLoc[0], endLoc[1], 1 if depth is not const.MAX_DEPTH else 0,
-													bodies.DOWNSTAIR if depth is not const.MAX_DEPTH else bodies.CHARM)
+			currentMap[beginLoc[1]][beginLoc[0]] = Room(beginLoc[0], beginLoc[1], bodies.EXIT if depth is 0 else bodies.UPSTAIR)
+			currentMap[endLoc[1]][endLoc[0]] = Room(endLoc[0], endLoc[1], bodies.DOWNSTAIR if depth is not const.MAX_DEPTH else bodies.CHARM)
 
 			currentMap.append([beginLoc, endLoc])
 
@@ -115,6 +118,9 @@ def generateMap(difficulty, seed = randLib.seed):
 
 			lastRoom = currentMap[currentLoc[1]][currentLoc[0]]
 			lastRoomDir = 3
+
+			roomsToRandomise.append(lastRoom)
+
 			while not (currentLoc[0] == finLoc[0] and currentLoc[1] == finLoc[1]):
 				if currentLoc[1] is const.MAP_HEIGHT - 1:  # If on the opposite edge
 					possibleDirs = [4 if currentLoc[0] > finLoc[0] else 2]  # Move left or right only depending on where we are in relation to the exit
@@ -140,31 +146,72 @@ def generateMap(difficulty, seed = randLib.seed):
 				log(currentLoc)
 
 				if not (currentLoc[0] == finLoc[0] and currentLoc[1] == finLoc[1]):
-					newRoom = Room(currentLoc[0], currentLoc[1], 0, definitions.PATH)
+					newRoom = Room(currentLoc[0], currentLoc[1], definitions.PATH)
 					currentMap[currentLoc[1]][currentLoc[0]] = newRoom
 					lastRoom.neighbours[newDir - 1] = newRoom
 					newRoom.neighbours[(newDir + 2) % 4 - 1] = lastRoom
 
 					lastRoom = newRoom
 					lastRoomDir = newDir
+
+					roomsToRandomise.append(newRoom)
 				else:
 					lastRoom.neighbours[newDir - 1] = finRoom
 					finRoom.neighbours[(newDir + 2) % 4 - 1] = lastRoom
 
+					roomsToRandomise.append(finRoom)
+
+		log('Branches')
+		while len(roomsToRandomise) is not 0:
+			currentRoom = roomsToRandomise[0]
+			for i in range(1, 5):
+				if currentRoom.neighbours[i-1] is not None: continue
+
+				newRoom: Room = None
+				if i is 1 and currentRoom.y is not 0 and currentMap[currentRoom.y - 1][currentRoom.x] is None and rand(0, 100) < 50:
+					newRoom = Room(currentRoom.x, currentRoom.y - 1, bodies.GENERIC)
+					currentMap[currentRoom.y - 1][currentRoom.x] = newRoom
+
+				if i is 2 and currentRoom.x is not const.MAP_WIDTH - 1 and currentMap[currentRoom.y][currentRoom.x + 1] is None and rand(0, 100) < 50:
+					newRoom = Room(currentRoom.x + 1, currentRoom.y, bodies.GENERIC)
+					currentMap[currentRoom.y][currentRoom.x + 1] = newRoom
+
+				if i is 3 and currentRoom.y is not const.MAP_HEIGHT - 1 and currentMap[currentRoom.y + 1][currentRoom.x] is None and rand(0, 100) < 50:
+					newRoom = Room(currentRoom.x, currentRoom.y + 1, bodies.GENERIC)
+					currentMap[currentRoom.y + 1][currentRoom.x] = newRoom\
+
+				if i is 4 and currentRoom.x is not 0 and currentMap[currentRoom.y][currentRoom.x - 1] is None and rand(0, 100) < 50:
+					newRoom = Room(currentRoom.x - 1, currentRoom.y, bodies.GENERIC)
+					currentMap[currentRoom.y][currentRoom.x - 1] = newRoom
+
+				if newRoom is not None:
+					currentRoom.neighbours[i-1] = newRoom
+					newRoom.neighbours[(i+1)%4] = currentRoom
+					roomsToRandomise.append(newRoom)
+					log('[' + str(newRoom.x) + ', ' + str(newRoom.y) + ']')
+			roomsToRandomise.remove(currentRoom)
+
 		generatedMap.append(currentMap)
+
+		log('Items')
+		for row in currentMap:
+			for room in row:
+				if room is not None:
+					pass
 
 	return generatedMap
 
 def roomToInt(room: Room, pos: List[int]) -> int:
+	if room is None: return 0
+
 	i = 0
-	if room is None: return i
 	if room.x is pos[0] and room.y is pos[1]:
 		i |= 0b10000000
-	if room.exit:
+	if room.exit is not None:
 		i |= 0b01000000
-	if room.upstair:
+	if room.upstair is not None:
 		i |= 0b00100000
-	if room.downstair:
+	if room.downstair is not None:
 		i |= 0b00010000
 	if room.neighbours[0] is not None:
 		i |= 0b00001000
@@ -190,6 +237,8 @@ def playGame(gameMap):
 	health = const.START_HEALTH
 	armour = const.START_ARMOUR
 	attack = const.START_ATTACK
+	score = 0
+	charm = False
 	explored = []
 
 	global command, keyPressed
@@ -210,6 +259,8 @@ def playGame(gameMap):
 	currentDepth: List[List[Room]] = gameMap[depth]
 	posRooms: List[int] = list(currentDepth[len(currentDepth) - 1][0])
 	posInt: List[int] = list(currentDepth[posRooms[1]][posRooms[0]].entryPoint)
+
+	explored[depth][posRooms[1]][posRooms[0]] = True
 
 	keyListener = keyboard.Listener(on_press = keyPress)
 	keyListener.start()
@@ -237,6 +288,8 @@ def playGame(gameMap):
 		if command == '>':
 			command = input(" ")[1:]
 
+		didMove = False
+
 		if command == 'megalovania':
 			if track is not None:
 				track.terminate()
@@ -255,29 +308,41 @@ def playGame(gameMap):
 
 		# Movement
 		elif command == 'h':
-			if posInt[0] > 0 and currentDepth[posRooms[1]][posRooms[0]].body[posInt[1]][posInt[0] - 1] != '#':
-				posInt[0] -= 1
+			if posInt[0] > 0:
+				if currentDepth[posRooms[1]][posRooms[0]].body[posInt[1]][posInt[0] - 1] != '#':
+					posInt[0] -= 1
+					didMove = True
+				elif charm and currentDepth[posRooms[1]][posRooms[0]].body[posInt[1]][posInt[0] - 2] != '#':
+					posInt[0] -= 2
+					didMove = True
 			elif posInt[1] == int(const.ROOM_HEIGHT / 2) and currentDepth[posRooms[1]][posRooms[0]].neighbours[3] is not None:
 				posInt[0] = const.ROOM_WIDTH - 1
 				posRooms[0] -= 1
+				didMove = True
 		elif command == 'j':
-			if posInt[1] < const.ROOM_HEIGHT and currentDepth[posRooms[1]][posRooms[0]].body[posInt[1] + 1][posInt[0]] != '#':
+			if posInt[1] < const.ROOM_HEIGHT - 1 and currentDepth[posRooms[1]][posRooms[0]].body[posInt[1] + 1][posInt[0]] != '#':
 				posInt[1] += 1
+				didMove = True
 			elif posInt[0] == int(const.ROOM_WIDTH / 2) and currentDepth[posRooms[1]][posRooms[0]].neighbours[2] is not None:
 				posInt[1] = 0
 				posRooms[1] += 1
+				didMove = True
 		elif command == 'k':
 			if posInt[1] > 0 and currentDepth[posRooms[1]][posRooms[0]].body[posInt[1] - 1][posInt[0]] != '#':
 				posInt[1] -= 1
+				didMove = True
 			elif posInt[0] == int(const.ROOM_WIDTH / 2) and currentDepth[posRooms[1]][posRooms[0]].neighbours[0] is not None:
 				posInt[1] = const.ROOM_HEIGHT - 1
 				posRooms[1] -= 1
+				didMove = True
 		elif command == 'l':
 			if posInt[0] < const.ROOM_WIDTH - 1 and currentDepth[posRooms[1]][posRooms[0]].body[posInt[1]][posInt[0] + 1] != '#':
 				posInt[0] += 1
+				didMove = True
 			elif posInt[1] == int(const.ROOM_HEIGHT / 2) and currentDepth[posRooms[1]][posRooms[0]].neighbours[1] is not None:
 				posInt[0] = 0
 				posRooms[0] += 1
+				didMove = True
 		elif command == 'y':
 			pass # Move up-left
 		elif command == 'u':
@@ -291,9 +356,8 @@ def playGame(gameMap):
 			if track is not None:
 				track.terminate()
 			keyListener.stop()
-			rd.header()
-			print('Thanks for playing!')
-			input('Press enter to continue.')
+			io.putHighScore('Killed yourself', score)
+			rd.highscores(io.getHighScores())
 			return # TODO: Make this more than just a quit
 
 		elif const.DEBUG:
@@ -301,9 +365,28 @@ def playGame(gameMap):
 				try:
 					depth = int(command[1:])
 					currentDepth = gameMap[depth]
-					posRooms = currentDepth[len(currentDepth) - 1][0]
+					posRooms = list(currentDepth[len(currentDepth) - 1][0])
 				except Exception:
 					pass
+
+		if didMove:
+			explored[depth][posRooms[1]][posRooms[0]] = True # Room is explored
+
+			if currentDepth[posRooms[1]][posRooms[0]].downstair is not None and posInt[0] == currentDepth[posRooms[1]][posRooms[0]].downstair[0] and posInt[1] == currentDepth[posRooms[1]][posRooms[0]].downstair[1]:
+				# Downstairs
+				depth += 1
+				currentDepth = gameMap[depth]
+				posRooms = list(currentDepth[len(currentDepth) - 1][0])
+				posInt = list(currentDepth[posRooms[1]][posRooms[0]].entryPoint)
+			elif currentDepth[posRooms[1]][posRooms[0]].upstair is not None and posInt[0] == currentDepth[posRooms[1]][posRooms[0]].upstair[0] and posInt[1] == currentDepth[posRooms[1]][posRooms[0]].upstair[1]:
+				# Upstairs
+				depth -= 1
+				currentDepth = gameMap[depth]
+				posRooms = list(currentDepth[len(currentDepth) - 1][1])
+				posInt = list(currentDepth[posRooms[1]][posRooms[0]].entryPoint)
+			elif currentDepth[posRooms[1]][posRooms[0]].exit is not None and posInt[0] == currentDepth[posRooms[1]][posRooms[0]].exit[0] and posInt[1] == currentDepth[posRooms[1]][posRooms[0]].exit[1]:
+				io.putHighScore('Left the dungeon', score)
+				rd.highscores(io.getHighScores())
 
 		if track is not None:
 			if track.poll() is not None:
