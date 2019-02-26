@@ -6,6 +6,33 @@ import random as randLib
 possibleItems = [
 	[ # Depth 0
 		0, 1, 2, 3
+	],
+	[ # Depth 1
+		0, 1, 2, 3
+	],
+	[ # Depth 2
+		0, 1, 2, 3
+	],
+	[ # Depth 3
+		0, 1, 2, 3
+	],
+	[ # Depth 4
+		0, 1, 2, 3
+	],
+	[ # Depth 5
+		0, 1, 2, 3
+	],
+	[ # Depth 6
+		0, 1, 2, 3
+	],
+	[ # Depth 7
+		0, 1, 2, 3
+	],
+	[ # Depth 8
+		0, 1, 2, 3
+	],
+	[ # Depth 9
+		0, 1, 2, 3
 	]
 ]
 
@@ -17,8 +44,7 @@ class Gold(Item):
 		self.value = value
 
 	def render(self, detected):
-		return '\x1b[0;97;40m*' if not detected else '\x1b[0;97;40m' # TODO: Replace colour with yellow
-		# TODO: Replace detected background with blue
+		return '\x1b[0;93;40m*' if not detected else '\x1b[0;93;104m*'
 
 	def collect(self):
 		return 0, 0, 0, self.value
@@ -33,13 +59,13 @@ class Chance(Item):
 		super().__init__(room, x, y)
 
 		if x is not const.ROOM_WIDTH - 1:
-			room.items[[x + 1, y]] = Gold(room, x + 1, y)
+			room.items[(x + 1, y)] = Gold(room, x + 1, y)
 		if x is not 0:
-			room.items[[x - 1, y]] = Gold(room, x - 1, y)
+			room.items[(x - 1, y)] = Gold(room, x - 1, y)
 		if y is not const.ROOM_HEIGHT - 1:
-			room.items[[x, y + 1]] = Gold(room, x, y + 1)
+			room.items[(x, y + 1)] = Gold(room, x, y + 1)
 		if y is not 0:
-			room.items[[x, y - 1]] = Gold(room, x, y - 1)
+			room.items[(x, y - 1)] = Gold(room, x, y - 1)
 
 		self.health = 0
 		self.armour = 0
@@ -57,7 +83,7 @@ class Chance(Item):
 			self.attack = -randLib.randint(0, 100) if self.badOrGood is False else randLib.randint(0, 100)
 
 	def render(self, detected):
-		return '\x1b[0;97;40m‽' if not detected else '\x1b[0;97;40m‽' if self.badOrGood else '\x1b[0;97;40m‽' # TODO: Replace with random 256-bit colour
+		return '\x1b[0;97;' + ('40' if not detected else '104' if self.badOrGood else '31') + 'm\x1b[38;5;' + str(randLib.randint(16, 231)) + 'm‽'
 
 	def collect(self):
 		return self.health, self.armour, self.attack, 0
@@ -72,10 +98,10 @@ class Detector(Item):
 		super().__init__(room, x, y)
 
 	def render(self, detected):
-		return '\x1b[0;97;40m√' # TODO: Replace with blue background
+		return '\x1b[0;97;104m√'
 
 	def collect(self):
-		return 0, 0, 0, -50
+		return 0, 0, 0, -50, 0b1
 
 	def badOrGood(self):
 		return True
@@ -99,7 +125,7 @@ class Boost(Item):
 			self.attack = randLib.randint(1, depth + 1) * 5
 
 	def render(self, detected):
-		return ('\x1b[0;97;40m' if not detected else '\x1b[0;97;40m')\
+		return ('\x1b[0;31;40m' if not detected else '\x1b[0;97;104m')\
 		+ (	'♥' if self.health is not 0 else
 			'✚' if self.armour is not 0 else
 			'♠︎')

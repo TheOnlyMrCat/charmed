@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from objects.item import Item
 
 import random
@@ -27,7 +27,7 @@ class Room:
 		self.x = x
 		self.y = y
 
-		self.items: Dict[List[int, int], Item] = []
+		self.items: Dict[Tuple[int, int], Item] = dict([])
 		self.body = random.choice(body)
 
 		self.exit = self.findChar('x')

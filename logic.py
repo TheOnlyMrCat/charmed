@@ -1,4 +1,5 @@
 from room import *
+from objects.item import definitions as items
 from typing import List, Any
 from subprocess import Popen
 from pynput import keyboard
@@ -194,18 +195,33 @@ def generateMap(difficulty, seed = randLib.seed):
 		generatedMap.append(currentMap)
 
 		log('Items')
-		for row in currentMap:
-			for room in row:
+		for y in range(len(currentMap)-1):
+			for room in currentMap[y]:
 				if room is not None:
-					pass
+					numitems = max(rand(-2, 2), 0)
+					for i in range(numitems):
+						item = random.choice(items.possibleItems[depth])
+
+						x, y = rand(0, const.ROOM_WIDTH-1), rand(0, const.ROOM_HEIGHT-1)
+						while room.body[y][x] == '#':
+							x, y = rand(0, const.ROOM_WIDTH-1), rand(0, const.ROOM_HEIGHT-1)
+
+						if item is 0:
+							room.items[(x, y)] = items.Gold(room, x, y)
+						if item is 1:
+							room.items[(x, y)] = items.Chance(room, x, y)
+						if item is 2:
+							room.items[(x, y)] = items.Detector(room, x, y)
+						if item is 3:
+							room.items[(x, y)] = items.Boost(room, x, y, depth)
 
 	return generatedMap
 
-def roomToInt(room: Room, pos: List[int]) -> int:
+def roomToInt(room: Room, detected: bool) -> int:
 	if room is None: return 0
 
 	i = 0
-	if room.x is pos[0] and room.y is pos[1]:
+	if detected:
 		i |= 0b10000000
 	if room.exit is not None:
 		i |= 0b01000000
@@ -255,10 +271,10 @@ def playGame(gameMap):
 	filePath = os.path.dirname(os.path.realpath(__file__))
 
 	depth = 0
-	moveMode = False
 	currentDepth: List[List[Room]] = gameMap[depth]
 	posRooms: List[int] = list(currentDepth[len(currentDepth) - 1][0])
-	posInt: List[int] = list(currentDepth[posRooms[1]][posRooms[0]].entryPoint)
+	currentRoom: Room = currentDepth[posRooms[1]][posRooms[0]]
+	posInt: List[int] = list(currentRoom.entryPoint)
 
 	explored[depth][posRooms[1]][posRooms[0]] = True
 
@@ -268,33 +284,33 @@ def playGame(gameMap):
 	# Main loop
 	while True:
 		rd.header()
-		rd.stats(health, armour, attack)
+		rd.stats(health, armour, attack, score, charm)
 
 		rd.rooms([
-			[roomToInt(currentDepth[y][x], posRooms) if explored[depth][y][x] else 0 for x in range(len(currentDepth[y]))]
+			[roomToInt(currentDepth[y][x], False) if explored[depth][y][x] else 0 for x in range(len(currentDepth[y]))]
 			for y in range(len(currentDepth) - 1)
-		])
+		], posRooms)
 
 		print()
 
-		roomChars = currentDepth[posRooms[1]][posRooms[0]]
-
-		rd.room(roomChars, posInt)
+		rd.room(currentRoom, False, posInt)
 
 		keyPressed = False
 		while keyPressed is False:
 			continue
 
 		if command == '>':
-			command = input(" ")[1:]
+			input('')
+			command = input('Enter command: ')
 
 		didMove = False
+		log('Command: "' + command + '"')
 
+		# Megalovania
 		if command == 'megalovania':
 			if track is not None:
 				track.terminate()
 
-			# Megalovania
 			track = Popen(['/usr/bin/afplay', filePath + '/data/music (hidden).mp3'])
 
 		# Cheat codes
@@ -304,61 +320,101 @@ def playGame(gameMap):
 					for x in range(len(explored[d][y])):
 						explored[d][y][x] = True
 		elif command == 'kkjjhlhlba':
-			pass
+			charm = True
 
-		# Movement
+		# Movement - Cardinal
 		elif command == 'h':
 			if posInt[0] > 0:
-				if currentDepth[posRooms[1]][posRooms[0]].body[posInt[1]][posInt[0] - 1] != '#':
+				if currentRoom.body[posInt[1]][posInt[0] - 1] != '#':
 					posInt[0] -= 1
 					didMove = True
-				elif charm and currentDepth[posRooms[1]][posRooms[0]].body[posInt[1]][posInt[0] - 2] != '#':
+				elif charm and currentRoom.body[posInt[1]][posInt[0] - 2] != '#':
 					posInt[0] -= 2
 					didMove = True
-			elif posInt[1] == int(const.ROOM_HEIGHT / 2) and currentDepth[posRooms[1]][posRooms[0]].neighbours[3] is not None:
+			elif posInt[1] == int(const.ROOM_HEIGHT / 2) and currentRoom.neighbours[3] is not None:
 				posInt[0] = const.ROOM_WIDTH - 1
 				posRooms[0] -= 1
 				didMove = True
 		elif command == 'j':
-			if posInt[1] < const.ROOM_HEIGHT - 1 and currentDepth[posRooms[1]][posRooms[0]].body[posInt[1] + 1][posInt[0]] != '#':
-				posInt[1] += 1
-				didMove = True
-			elif posInt[0] == int(const.ROOM_WIDTH / 2) and currentDepth[posRooms[1]][posRooms[0]].neighbours[2] is not None:
+			if posInt[1] < const.ROOM_HEIGHT - 1:
+				if currentRoom.body[posInt[1] + 1][posInt[0]] != '#':
+					posInt[1] += 1
+					didMove = True
+				elif charm and currentRoom.body[posInt[1] + 2][posInt[0]] != '#':
+					posInt[1] += 2
+					didMove = True
+			elif posInt[0] == int(const.ROOM_WIDTH / 2) and currentRoom.neighbours[2] is not None:
 				posInt[1] = 0
 				posRooms[1] += 1
 				didMove = True
 		elif command == 'k':
-			if posInt[1] > 0 and currentDepth[posRooms[1]][posRooms[0]].body[posInt[1] - 1][posInt[0]] != '#':
-				posInt[1] -= 1
-				didMove = True
-			elif posInt[0] == int(const.ROOM_WIDTH / 2) and currentDepth[posRooms[1]][posRooms[0]].neighbours[0] is not None:
+			if posInt[1] > 0:
+				if currentRoom.body[posInt[1] - 1][posInt[0]] != '#':
+					posInt[1] -= 1
+					didMove = True
+				elif charm and currentRoom.body[posInt[1] - 2][posInt[0]] != '#':
+					posInt[1] -= 2
+					didMove = True
+			elif posInt[0] == int(const.ROOM_WIDTH / 2) and currentRoom.neighbours[0] is not None:
 				posInt[1] = const.ROOM_HEIGHT - 1
 				posRooms[1] -= 1
 				didMove = True
 		elif command == 'l':
-			if posInt[0] < const.ROOM_WIDTH - 1 and currentDepth[posRooms[1]][posRooms[0]].body[posInt[1]][posInt[0] + 1] != '#':
-				posInt[0] += 1
-				didMove = True
-			elif posInt[1] == int(const.ROOM_HEIGHT / 2) and currentDepth[posRooms[1]][posRooms[0]].neighbours[1] is not None:
+			if posInt[0] < const.ROOM_WIDTH - 1:
+				if currentRoom.body[posInt[1]][posInt[0] + 1] != '#':
+					posInt[0] += 1
+					didMove = True
+				elif charm and currentRoom.body[posInt[1]][posInt[0] + 2]:
+					posInt[0] += 2
+					didMove = True
+			elif posInt[1] == int(const.ROOM_HEIGHT / 2) and currentRoom.neighbours[1] is not None:
 				posInt[0] = 0
 				posRooms[0] += 1
 				didMove = True
+		# Diagonal
 		elif command == 'y':
-			pass # Move up-left
+			if posInt[0] > 0 and posInt[1] > 0:
+				if currentRoom.body[posInt[1]-1][posInt[0]-1] != '#' and (charm or (currentRoom.body[posInt[1]-1][posInt[0]] != '#' and currentRoom.body[posInt[1]][posInt[0]-1] != '#')):
+					posInt[0] -= 1
+					posInt[1] -= 1
+				elif charm and currentRoom.body[posInt[1]-2][posInt[0]-2] != '#':
+					posInt[0] -= 2
+					posInt[1] -= 2
 		elif command == 'u':
-			pass # Move up-right
+			if posInt[0] < const.ROOM_WIDTH - 1 and posInt[1] > 0:
+				if currentRoom.body[posInt[1]-1][posInt[0]+1] != '#' and (charm or (currentRoom.body[posInt[1]-1][posInt[0]] != '#' and currentRoom.body[posInt[1]][posInt[0]+1] != '#')):
+					posInt[0] += 1
+					posInt[1] -= 1
+				elif charm and currentRoom.body[posInt[1]-2][posInt[0]+2] != '#':
+					posInt[0] += 2
+					posInt[1] -= 2
 		elif command == 'b':
-			pass # Move down-left
+			if posInt[0] > 0 and posInt[1] < const.ROOM_HEIGHT - 1:
+				if currentRoom.body[posInt[1]+1][posInt[0]-1] != '#' and (charm or (currentRoom.body[posInt[1]+1][posInt[0]] != '#' and currentRoom.body[posInt[1]][posInt[0]-1] != '#')):
+					posInt[0] -= 1
+					posInt[1] += 1
+				elif charm and currentRoom.body[posInt[1]+2][posInt[0]-2] != '#':
+					posInt[0] -= 2
+					posInt[1] += 2
 		elif command == 'n':
-			pass # Move down-right
+			if posInt[0] < const.ROOM_WIDTH - 1 and posInt[1] < const.ROOM_HEIGHT - 1:
+				if currentRoom.body[posInt[1]+1][posInt[0]+1] != '#' and (charm or (currentRoom.body[posInt[1]+1][posInt[0]] != '#' and currentRoom.body[posInt[1]][posInt[0]+1] != '#')):
+					posInt[0] += 1
+					posInt[1] += 1
+				elif charm and currentRoom.body[posInt[1]+2][posInt[0]+2] != '#':
+					posInt[0] += 2
+					posInt[1] += 2
 
+		# Quit and suspend
 		elif command == 'q' or command == 'quit':
 			if track is not None:
 				track.terminate()
 			keyListener.stop()
 			io.putHighScore('Killed yourself', score)
 			rd.highscores(io.getHighScores())
-			return # TODO: Make this more than just a quit
+			return
+		elif command == 's':
+			rd.suspend()
 
 		elif const.DEBUG:
 			if command.startswith('d'):
@@ -371,6 +427,7 @@ def playGame(gameMap):
 
 		if didMove:
 			explored[depth][posRooms[1]][posRooms[0]] = True # Room is explored
+			currentRoom = currentDepth[posRooms[1]][posRooms[0]] # currentRoom is up to date
 
 			if currentDepth[posRooms[1]][posRooms[0]].downstair is not None and posInt[0] == currentDepth[posRooms[1]][posRooms[0]].downstair[0] and posInt[1] == currentDepth[posRooms[1]][posRooms[0]].downstair[1]:
 				# Downstairs
@@ -387,6 +444,7 @@ def playGame(gameMap):
 			elif currentDepth[posRooms[1]][posRooms[0]].exit is not None and posInt[0] == currentDepth[posRooms[1]][posRooms[0]].exit[0] and posInt[1] == currentDepth[posRooms[1]][posRooms[0]].exit[1]:
 				io.putHighScore('Left the dungeon', score)
 				rd.highscores(io.getHighScores())
+				return
 
 		if track is not None:
 			if track.poll() is not None:
