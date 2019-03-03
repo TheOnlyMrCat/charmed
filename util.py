@@ -1,6 +1,7 @@
 import room as roomDef
 import constants as const
 
+
 def roombfs(px, py, gx, gy, room) -> int:
 	toSearch = []
 
@@ -13,28 +14,28 @@ def roombfs(px, py, gx, gy, room) -> int:
 	pos = (0, px, py)
 
 	if pos[2] - 1 >= 0 and room.monsters[(pos[1], pos[2] - 1)] is None and room.body[pos[2] - 1][pos[1]] not in roomDef.BLOCKING:
-		toSearch.append((0, pos[1], pos[2] - 1)) # North
+		toSearch.append((0, pos[1], pos[2] - 1))  # North
 
 	if pos[2] - 1 >= 0 and pos[1] + 1 < const.ROOM_WIDTH and room.monsters[(pos[1] + 1, pos[2] - 1)] is None and room.body[pos[2] - 1][pos[1] + 1] not in roomDef.BLOCKING and room.body[pos[2]][pos[1] + 1] not in roomDef.BLOCKING and room.body[pos[2] - 1][pos[1]] not in roomDef.BLOCKING:
-		toSearch.append((1, pos[1] + 1, pos[2] - 1)) # North-East
+		toSearch.append((1, pos[1] + 1, pos[2] - 1))  # North-East
 
 	if pos[1] + 1 < const.ROOM_WIDTH and room.monsters[(pos[1] + 1, pos[2])] is None and room.body[pos[2]][pos[1] + 1] not in roomDef.BLOCKING:
-		toSearch.append((2, pos[1] + 1, pos[2])) # East
+		toSearch.append((2, pos[1] + 1, pos[2]))  # East
 
-	if pos[2] + 1 < const.ROOM_HEIGHT and pos[1] + 1 < const.ROOM_WIDTH  and room.monsters[(pos[1] + 1, pos[2] + 1)] is None and room.body[pos[2] + 1][pos[1] + 1] not in roomDef.BLOCKING and room.body[pos[2] - 1][pos[1]] not in roomDef.BLOCKING and room.body[pos[2]][pos[1] + 1] not in roomDef.BLOCKING:
-		toSearch.append((3, pos[1] + 1, pos[2] + 1)) # South-East
+	if pos[2] + 1 < const.ROOM_HEIGHT and pos[1] + 1 < const.ROOM_WIDTH and room.monsters[(pos[1] + 1, pos[2] + 1)] is None and room.body[pos[2] + 1][pos[1] + 1] not in roomDef.BLOCKING and room.body[pos[2] - 1][pos[1]] not in roomDef.BLOCKING and room.body[pos[2]][pos[1] + 1] not in roomDef.BLOCKING:
+		toSearch.append((3, pos[1] + 1, pos[2] + 1))  # South-East
 
 	if pos[2] + 1 < const.ROOM_HEIGHT and room.monsters[(pos[1], pos[2] + 1)] is None and room.body[pos[2] + 1][pos[1]] not in roomDef.BLOCKING:
-		toSearch.append((4, pos[1], pos[2] + 1)) # South
+		toSearch.append((4, pos[1], pos[2] + 1))  # South
 
 	if pos[2] + 1 < const.ROOM_HEIGHT and pos[1] - 1 >= 0 and room.monsters[(pos[1] - 1, pos[2] + 1)] is None and room.body[pos[2] + 1][pos[1] - 1] not in roomDef.BLOCKING and room.body[pos[2]][pos[1] - 1] not in roomDef.BLOCKING and room.body[pos[2] - 1][pos[1]] not in roomDef.BLOCKING:
-		toSearch.append((5, pos[1] - 1, pos[2] + 1)) # South-West
+		toSearch.append((5, pos[1] - 1, pos[2] + 1))  # South-West
 
 	if pos[1] - 1 >= 0 and room.monsters[(pos[1] - 1, pos[2])] is None and room.body[pos[2]][pos[1] - 1] not in roomDef.BLOCKING:
-		toSearch.append((6, pos[1] - 1, pos[2])) # West
+		toSearch.append((6, pos[1] - 1, pos[2]))  # West
 
 	if pos[1] - 1 >= 0 and pos[2] - 1 >= 0 and room.monsters[(pos[1] - 1, pos[2] - 1)] is None and room.body[pos[2] - 1][pos[1] - 1] not in roomDef.BLOCKING and room.body[pos[2] - 1][pos[1]] not in roomDef.BLOCKING and room.body[pos[2]][pos[1] - 1] not in roomDef.BLOCKING:
-		toSearch.append((7 , pos[1] - 1, pos[2] - 1)) # North-West
+		toSearch.append((7, pos[1] - 1, pos[2] - 1))  # North-West
 
 	while len(toSearch) > 0:
 		pos = toSearch.pop(0)

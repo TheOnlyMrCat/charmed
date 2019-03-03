@@ -9,6 +9,7 @@ import room.definitions as bodies
 
 BLOCKING = ['#', "#p", 'W', 'l']
 
+
 def mapToOutput(d: str) -> str:
 	c = d[0]
 	if c == '.':
@@ -30,9 +31,10 @@ def mapToOutput(d: str) -> str:
 	else:
 		return rd.blankf + c
 
+
 class Room:
 
-	def __init__(self, x, y, body = bodies.GENERIC):
+	def __init__(self, x, y, body=bodies.GENERIC):
 		self.neighbours = [None, None, None, None]
 
 		self.x = x
@@ -58,7 +60,6 @@ class Room:
 				if char in self.body[row][cell]:
 					return cell, row
 		return None
-
 
 	def getPrintBody(self):
 		return [[mapToOutput(char) for char in row] for row in self.body]

@@ -4,6 +4,7 @@ import constants as const
 import logic
 import fileio
 
+
 def main():
 	try:
 		opts = render.welcome()
@@ -36,7 +37,8 @@ def main():
 		raise
 	finally:
 		input('Press enter to exit.')
-		print('\x1b[0m') # Reset terminal colours
+		print('\x1b[0m')  # Reset terminal colours
+
 
 if __name__ == "__main__":
 	main()

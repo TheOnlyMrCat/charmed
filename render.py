@@ -50,21 +50,25 @@ def welcome():
 	print('When the game starts, do not switch to another window without suspending the game by pressing "p"')
 	return input('Input options, then press enter to continue: ')
 
+
 def difficulty():
 	header()
 	print('Difficulty: [1] I wanna go home! (Monsters have less health and attack, and helpful items spawn more frequently')
 	print("            [2] What's in here? (Recommended)")
 	print('            [3] Hurt me plenty! (Monsters have more health and attack, and harmful items spawn more frequently)')
-	print("            [4] Just kill me. (Monsters have more health and attack, and helpful items don't spawn")
+	print("            [4] Just kill me. (Monsters have more health and attack, and helpful items are extremely rare")
 	return input('Input a value: ')
+
 
 def seed():
 	header()
 	return input('Seed: ')
 
-def generating(seedVal = None):
+
+def generating(seedVal=None):
 	header()
 	print('Generating level' + (('with seed ' + seedVal) if seedVal is not None else '') + '. This will take a moment.')
+
 
 def tutorial():
 	header()
@@ -78,6 +82,7 @@ def tutorial():
 	print('You are represented by "' + player + blankf + '".')
 	print('Press "?" at any time for help.')
 	input('Press enter to continue.')
+
 
 def commands():
 	header()
@@ -105,28 +110,40 @@ def commands():
 	print('                          "h" to show highscores and exit')
 	input('Press enter to continue.')
 
+
 def suspend():
 	header()
 	print('Game suspended.')
 	input('Press enter to continue.')
+
 
 def header():
 	subprocess.call('clear')
 	print(blankf + '', end='')
 	print('=============== Charmed ===============')
 
-def stats(health, armour, attack, score, charm):
+
+def stats(health, dhealth, attack, dattack, armour, darmour, score, dscore, charm):
 	print('Health: ', end='')
-	print('♥' * int(max(health / 10, 1)))
+	print('♥' * int(max(health / 5, 1)))
+	if dhealth > 0:
+		print('(+' + str(dhealth) + ')')
 
 	print('Armour: ', end='')
-	print('✚' * int(max(armour / 10, 1)))
+	print('✚' * int(max(armour / 5, 1)))
+	if darmour > 0:
+		print('(+' + str(darmour) + ')')
 
 	print('Attack: ', end='')
-	print('♠︎' * int(max(attack / 10, 1)))
+	print('♠︎' * int(max(attack / 5, 1)))
+	if dattack > 0:
+		print('(+' + str(darmour) + ')')
 
 	print('Score:', score, end='')
 	print('℧' if charm else '')
+	if dscore > 0:
+		print('(+' + str(dscore) + ')')
+
 
 def rooms(roomMap: List[List[int]], pos: List[int]):
 	"""
@@ -153,7 +170,7 @@ def rooms(roomMap: List[List[int]], pos: List[int]):
 			if x == pos[0] and y == pos[1]:
 				print(player, end='')
 				continue
-			
+
 			c = roomMap[y][x]
 
 			if c & 0b10000000:
@@ -176,51 +193,52 @@ def rooms(roomMap: List[List[int]], pos: List[int]):
 					if e:
 						if s:
 							if w:
-								print('┼', end='') # N,E,S,W
+								print('┼', end='')  # N,E,S,W
 							else:
-								print('├', end='') # N,E,S
+								print('├', end='')  # N,E,S
 						else:
 							if w:
-								print('┴', end='') # N,E,W
+								print('┴', end='')  # N,E,W
 							else:
-								print('└', end='') # N,E
+								print('└', end='')  # N,E
 					else:
 						if s:
 							if w:
-								print('┤', end='') # N,S,W
+								print('┤', end='')  # N,S,W
 							else:
-								print('│', end='') # N,S
+								print('│', end='')  # N,S
 						else:
 							if w:
-								print('┘', end='') # N,W
+								print('┘', end='')  # N,W
 							else:
-								print('│', end='') # N
+								print('│', end='')  # N
 				elif e:
 					if s:
 						if w:
-							print('┬', end='') # E,S,W
+							print('┬', end='')  # E,S,W
 						else:
-							print('┌', end='') # E,S
+							print('┌', end='')  # E,S
 					else:
 						if w:
-							print('─', end='') # E,W
+							print('─', end='')  # E,W
 						else:
-							print('─', end='') # E
+							print('─', end='')  # E
 
 				elif s:
 					if w:
-						print('┐', end='') # S,W
+						print('┐', end='')  # S,W
 					else:
-						print('│', end='') # S
+						print('│', end='')  # S
 
 				elif w:
-					print('─', end='') # W
+					print('─', end='')  # W
 
 				else:
-					print(' ', end='') # Unexplored/Nonexistent
+					print(' ', end='')  # Unexplored/Nonexistent
 		print(wall)
 
 	print(wallf + ('#' * (const.MAP_WIDTH + 2)) + blankf)
+
 
 def room(printRoom: Room, detected, playerPos: List[int]):
 	roomChars = printRoom.getPrintBody()
@@ -251,11 +269,13 @@ def room(printRoom: Room, detected, playerPos: List[int]):
 
 	print(blankf)
 
+
 def highscores(scores):
 	header()
 	print('Highscores')
 	for score in scores: print(score[0], 'with', score[1], 'gold')
 	input('Press enter to continue.')
+
 
 def thankyou():
 	header()

@@ -1,41 +1,137 @@
-from typing import Tuple
-
 from objects.item import Item
 
 import constants as const
 import random as randLib
 
 possibleItems = [
-	[ # Depth 0
-		0, 0, 0, 0, 0, 2, 3, 3
+	[ # Difficulty 1
+		[ # Depth 0
+			0, 0, 0, 0, 0, 2, 3, 3
+		],
+		[ # Depth 1
+			0, 0, 0, 0, 0, 1, 2, 2, 3, 3, 3
+		],
+		[ # Depth 2
+			0, 1, 2, 3
+		],
+		[ # Depth 3
+			0, 1, 2, 3
+		],
+		[ # Depth 4
+			0, 1, 2, 3
+		],
+		[ # Depth 5
+			0, 1, 2, 3
+		],
+		[ # Depth 6
+			0, 1, 2, 3
+		],
+		[ # Depth 7
+			0, 1, 2, 3
+		],
+		[ # Depth 8
+			0, 1, 2, 3
+		],
+		[ # Depth 9
+			0, 1, 2, 3
+		]
 	],
-	[ # Depth 1
-		0, 0, 0, 0, 0, 1, 2, 2, 3, 3, 3
+	[ # Difficulty 2
+		[ # Depth 0
+			0, 0, 0, 0, 0, 2, 3, 3
+		],
+		[ # Depth 1
+			0, 0, 0, 0, 0, 1, 2, 2, 3, 3, 3
+		],
+		[ # Depth 2
+			0, 1, 2, 3
+		],
+		[ # Depth 3
+			0, 1, 2, 3
+		],
+		[ # Depth 4
+			0, 1, 2, 3
+		],
+		[ # Depth 5
+			0, 1, 2, 3
+		],
+		[ # Depth 6
+			0, 1, 2, 3
+		],
+		[ # Depth 7
+			0, 1, 2, 3
+		],
+		[ # Depth 8
+			0, 1, 2, 3
+		],
+		[ # Depth 9
+			0, 1, 2, 3
+		]
 	],
-	[ # Depth 2
-		0, 1, 2, 3
+	[ # Difficulty 3
+		[ # Depth 0
+			0, 0, 0, 0, 0, 2, 3, 3
+		],
+		[ # Depth 1
+			0, 0, 0, 0, 0, 1, 2, 2, 3, 3, 3
+		],
+		[ # Depth 2
+			0, 1, 2, 3
+		],
+		[ # Depth 3
+			0, 1, 2, 3
+		],
+		[ # Depth 4
+			0, 1, 2, 3
+		],
+		[ # Depth 5
+			0, 1, 2, 3
+		],
+		[ # Depth 6
+			0, 1, 2, 3
+		],
+		[ # Depth 7
+			0, 1, 2, 3
+		],
+		[ # Depth 8
+			0, 1, 2, 3
+		],
+		[ # Depth 9
+			0, 1, 2, 3
+		]
 	],
-	[ # Depth 3
-		0, 1, 2, 3
+	[ # Difficulty 4
+		[ # Depth 0
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3
+		],
+		[ # Depth 1
+			0, 0, 0, 0, 0, 0, 0, 1, 1, 3
+		],
+		[ # Depth 2
+			0, 0, 0, 0, 0, 0, 1, 3
+		],
+		[ # Depth 3
+			0, 0, 0, 0, 0, 1, 3
+		],
+		[ # Depth 4
+			0, 0, 0, 0, 0, 1, 3
+		],
+		[ # Depth 5
+			0, 0, 0, 0, 0, 1, 3
+		],
+		[ # Depth 6
+			0, 0, 0, 0, 0, 1, 3
+		],
+		[ # Depth 7
+			0, 0, 0, 0, 0, 1, 3
+		],
+		[ # Depth 8
+			0, 0, 0, 0, 1, 3
+		],
+		[ # Depth 9
+			0, 0, 0, 0, 1, 3
+		]
 	],
-	[ # Depth 4
-		0, 1, 2, 3
-	],
-	[ # Depth 5
-		0, 1, 2, 3
-	],
-	[ # Depth 6
-		0, 1, 2, 3
-	],
-	[ # Depth 7
-		0, 1, 2, 3
-	],
-	[ # Depth 8
-		0, 1, 2, 3
-	],
-	[ # Depth 9
-		0, 1, 2, 3
-	]
 ]
 
 # Only here to render inside the room
@@ -67,7 +163,7 @@ class Gold(Item):
 # Item type 1
 class Chance(Item):
 
-	def __init__(self, room, x, y, depth):
+	def __init__(self, room, x, y, depth, difficulty):
 		super().__init__(room, x, y)
 
 		if x is not const.ROOM_WIDTH - 1:
@@ -83,7 +179,7 @@ class Chance(Item):
 		self.armour = 0
 		self.attack = 0
 
-		self.badOrGood = randLib.randint(0, 100) < 50
+		self.badOrGood = (randLib.randint(0, 10) + 2 - difficulty) < 5
 
 		stat = randLib.randint(0, 2)
 
