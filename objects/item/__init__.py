@@ -10,8 +10,5 @@ class Item:
 	def render(self, detected: bool) -> str:
 		pass
 
-	def collect(self) -> Tuple[int, int, int, int]:
-		pass
-
-	def badOrGood(self) -> bool:
+	def collect(self) -> Tuple[int, int, int, int, str]:
 		pass

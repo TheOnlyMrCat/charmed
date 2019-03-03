@@ -1,14 +1,17 @@
 from room import *
 from objects.item import definitions as items
+from objects.monster import definitions as monsters
 from typing import List, Any
 from subprocess import Popen
 from pynput import keyboard
 
+import room as roomDef
 import os
 import fileio as io
 import random as randLib
 import render as rd
 import constants as const
+import room
 
 def rand(rMin, rMax) -> int:
 	return randLib.randint(rMin, rMax)
@@ -29,7 +32,7 @@ def generateMap(difficulty, seed = randLib.seed):
 		# Generate the indices for this depth
 		for row in range(const.MAP_HEIGHT):
 			currentMap.append([])
-			for room in range(const.MAP_WIDTH):
+			for currentRoom in range(const.MAP_WIDTH):
 				currentMap[row].append(None)
 
 		log('Path')
@@ -44,7 +47,12 @@ def generateMap(difficulty, seed = randLib.seed):
 			endLoc   = (0 if endSide   is 4 else const.MAP_WIDTH - 1, rand(0, const.MAP_HEIGHT - 1))
 
 			currentMap[beginLoc[1]][beginLoc[0]] = Room(beginLoc[0], beginLoc[1], bodies.EXIT if depth is 0 else bodies.UPSTAIR)
-			currentMap[endLoc[1]][endLoc[0]] = Room(endLoc[0], endLoc[1], bodies.DOWNSTAIR if depth is not const.MAX_DEPTH else bodies.CHARM)
+			if depth is const.MAX_DEPTH - 1:
+				charmRoom = Room(endLoc[0], endLoc[1], bodies.CHARM)
+				charmRoom.items[(int(const.ROOM_WIDTH / 2), int(const.ROOM_HEIGHT / 2))] = items.Charm(room, int(const.ROOM_WIDTH / 2), int(const.ROOM_HEIGHT / 2))
+				currentMap[endLoc[1]][endLoc[0]] = charmRoom
+			else:
+				currentMap[endLoc[1]][endLoc[0]] = Room(endLoc[0], endLoc[1], bodies.DOWNSTAIR)
 
 			currentMap.append([beginLoc, endLoc])
 
@@ -105,7 +113,12 @@ def generateMap(difficulty, seed = randLib.seed):
 			endLoc   = (rand(0, const.MAP_WIDTH - 1), 0 if endSide   is 1 else const.MAP_HEIGHT - 1)
 
 			currentMap[beginLoc[1]][beginLoc[0]] = Room(beginLoc[0], beginLoc[1], bodies.EXIT if depth is 0 else bodies.UPSTAIR)
-			currentMap[endLoc[1]][endLoc[0]] = Room(endLoc[0], endLoc[1], bodies.DOWNSTAIR if depth is not const.MAX_DEPTH else bodies.CHARM)
+			if depth is const.MAX_DEPTH - 1:
+				charmRoom = Room(endLoc[0], endLoc[1], bodies.CHARM)
+				charmRoom.items[(int(const.ROOM_WIDTH / 2), int(const.ROOM_HEIGHT / 2))] = items.Charm(room, int(const.ROOM_WIDTH / 2), int(const.ROOM_HEIGHT / 2))
+				currentMap[endLoc[1]][endLoc[0]] = charmRoom
+			else:
+				currentMap[endLoc[1]][endLoc[0]] = Room(endLoc[0], endLoc[1], bodies.DOWNSTAIR)
 
 			currentMap.append([beginLoc, endLoc])
 
@@ -196,47 +209,48 @@ def generateMap(difficulty, seed = randLib.seed):
 
 		log('Items')
 		for y in range(len(currentMap)-1):
-			for room in currentMap[y]:
-				if room is not None:
-					numitems = max(rand(-2, 2), 0)
+			for currentRoom in currentMap[y]:
+				if currentRoom is not None:
+					numitems = max(rand(-5, 2), 0)
 					for i in range(numitems):
 						item = random.choice(items.possibleItems[depth])
 
 						x, y = rand(0, const.ROOM_WIDTH-1), rand(0, const.ROOM_HEIGHT-1)
-						while room.body[y][x] == '#':
+						while (x, y) in currentRoom.items or currentRoom.body[y][x] in room.BLOCKING:
 							x, y = rand(0, const.ROOM_WIDTH-1), rand(0, const.ROOM_HEIGHT-1)
 
 						if item is 0:
-							room.items[(x, y)] = items.Gold(room, x, y)
+							currentRoom.items[(x, y)] = items.Gold(currentRoom, x, y)
 						if item is 1:
-							room.items[(x, y)] = items.Chance(room, x, y)
+							currentRoom.items[(x, y)] = items.Chance(currentRoom, x, y, depth)
 						if item is 2:
-							room.items[(x, y)] = items.Detector(room, x, y)
+							currentRoom.items[(x, y)] = items.Detector(currentRoom, x, y)
 						if item is 3:
-							room.items[(x, y)] = items.Boost(room, x, y, depth)
+							currentRoom.items[(x, y)] = items.Boost(currentRoom, x, y, depth)
 
 	return generatedMap
 
-def roomToInt(room: Room, detected: bool) -> int:
+def roomToInt(room: Room, explored, detected: bool) -> int:
 	if room is None: return 0
 
 	i = 0
-	if detected:
+	if detected and len(room.items) > 0:
 		i |= 0b10000000
-	if room.exit is not None:
-		i |= 0b01000000
-	if room.upstair is not None:
-		i |= 0b00100000
-	if room.downstair is not None:
-		i |= 0b00010000
-	if room.neighbours[0] is not None:
-		i |= 0b00001000
-	if room.neighbours[1] is not None:
-		i |= 0b00000100
-	if room.neighbours[2] is not None:
-		i |= 0b00000010
-	if room.neighbours[3] is not None:
-		i |= 0b00000001
+	if explored:
+		if room.exit is not None:
+			i |= 0b01000000
+		if room.upstair is not None:
+			i |= 0b00100000
+		if room.downstair is not None:
+			i |= 0b00010000
+		if room.neighbours[0] is not None:
+			i |= 0b00001000
+		if room.neighbours[1] is not None:
+			i |= 0b00000100
+		if room.neighbours[2] is not None:
+			i |= 0b00000010
+		if room.neighbours[3] is not None:
+			i |= 0b00000001
 
 	return i
 
@@ -249,7 +263,24 @@ def keyPress(key):
 		command = str(key.char)
 		keyPressed = True
 
-def playGame(gameMap):
+def generateMonsters(rooms, depth):
+	generated = []
+	for currentRoom in rooms:
+		nummonsters = max(rand(-3, 2), 0)
+		for i in range(nummonsters):
+			monster = random.choice(monsters.possibleMonsters[depth])
+
+			x, y = rand(0, const.ROOM_WIDTH-1), rand(0, const.ROOM_HEIGHT-1)
+			while currentRoom.body[y][x] in room.BLOCKING:
+				x, y = rand(0, const.ROOM_WIDTH-1), rand(0, const.ROOM_HEIGHT-1)
+
+			if monster is 0:
+				new = monsters.Beetle(x, y, currentRoom)
+				new.room.monsters[(x, y)] = new
+			generated.append(new)
+	return generated
+
+def playGame(gameMap, difficulty, seed):
 	health = const.START_HEALTH
 	armour = const.START_ARMOUR
 	attack = const.START_ATTACK
@@ -271,11 +302,23 @@ def playGame(gameMap):
 	filePath = os.path.dirname(os.path.realpath(__file__))
 
 	depth = 0
+	itemsDetected = False
+
 	currentDepth: List[List[Room]] = gameMap[depth]
+	currentDepthRooms = []
+	for y in range(len(currentDepth) - 1):
+		for eachRoom in currentDepth[y]:
+			if eachRoom is not None:
+				currentDepthRooms.append(eachRoom)
+
 	posRooms: List[int] = list(currentDepth[len(currentDepth) - 1][0])
 	currentRoom: Room = currentDepth[posRooms[1]][posRooms[0]]
 	posInt: List[int] = list(currentRoom.entryPoint)
 
+	loadedMonsters = generateMonsters(currentDepthRooms, depth)
+
+	noclip = False
+	newInfo = ''
 	explored[depth][posRooms[1]][posRooms[0]] = True
 
 	keyListener = keyboard.Listener(on_press = keyPress)
@@ -287,13 +330,18 @@ def playGame(gameMap):
 		rd.stats(health, armour, attack, score, charm)
 
 		rd.rooms([
-			[roomToInt(currentDepth[y][x], False) if explored[depth][y][x] else 0 for x in range(len(currentDepth[y]))]
-			for y in range(len(currentDepth) - 1)
+			[roomToInt(currentDepth[y][x], explored[depth][y][x], itemsDetected and currentDepth[y][x].items.values() is not None)
+			 if currentDepth[y][x] is not None else 0
+			 for x in range(len(currentDepth[y]))]
+			 for y in range(len(currentDepth) - 1)
 		], posRooms)
 
 		print()
 
-		rd.room(currentRoom, False, posInt)
+		rd.room(currentRoom, itemsDetected, posInt)
+
+		if newInfo != '':
+			print(newInfo)
 
 		keyPressed = False
 		while keyPressed is False:
@@ -306,7 +354,7 @@ def playGame(gameMap):
 		didMove = False
 		log('Command: "' + command + '"')
 
-		# Megalovania
+		# Megalovania: TODO: Remove from GJ Version
 		if command == 'megalovania':
 			if track is not None:
 				track.terminate()
@@ -314,59 +362,91 @@ def playGame(gameMap):
 			track = Popen(['/usr/bin/afplay', filePath + '/data/music (hidden).mp3'])
 
 		# Cheat codes
-		elif command == 'winxp':
+		elif command == 'winxp': # (Windows) eXPlore
 			for d in range(len(explored)):
 				for y in range(len(explored[d])):
 					for x in range(len(explored[d][y])):
 						explored[d][y][x] = True
-		elif command == 'kkjjhlhlba':
+		elif command == 'kkjjhlhlba': # Konami code, must have
 			charm = True
+		elif command == 'northernlights': # "May I see it?"
+			itemsDetected = True
+		elif command == 'noclip': # Stop monsters moving
+			noclip = not noclip
 
 		# Movement - Cardinal
-		elif command == 'h':
+		elif command == 'h' or command == 'a':
 			if posInt[0] > 0:
-				if currentRoom.body[posInt[1]][posInt[0] - 1] != '#':
+				if currentRoom.monsters[(posInt[0] - 1, posInt[1])] is not None:
+					if currentRoom.monsters[(posInt[0] - 1, posInt[1])].hit(attack):
+						loadedMonsters.remove(currentRoom.monsters[(posInt[0] - 1, posInt[1])])
+						currentRoom.monsters[(posInt[0] - 1, posInt[1])] = None
+						didMove = True
+				elif currentRoom.body[posInt[1]][posInt[0] - 1] not in roomDef.BLOCKING:
 					posInt[0] -= 1
 					didMove = True
-				elif charm and currentRoom.body[posInt[1]][posInt[0] - 2] != '#':
+				elif charm and currentRoom.body[posInt[1]][posInt[0] - 2] not in roomDef.BLOCKING:
 					posInt[0] -= 2
 					didMove = True
+				else:
+					newInfo = 'You can\'t move that way.'
 			elif posInt[1] == int(const.ROOM_HEIGHT / 2) and currentRoom.neighbours[3] is not None:
 				posInt[0] = const.ROOM_WIDTH - 1
 				posRooms[0] -= 1
 				didMove = True
-		elif command == 'j':
+		elif command == 'j' or command == 's':
 			if posInt[1] < const.ROOM_HEIGHT - 1:
-				if currentRoom.body[posInt[1] + 1][posInt[0]] != '#':
+				if currentRoom.monsters[(posInt[0], posInt[1] + 1)] is not None:
+					if currentRoom.monsters[(posInt[0], posInt[1] + 1)].hit(attack):
+						loadedMonsters.remove(currentRoom.monsters[(posInt[0], posInt[1] + 1)])
+						currentRoom.monsters[(posInt[0], posInt[1] + 1)] = None
+						didMove = True
+				elif currentRoom.body[posInt[1] + 1][posInt[0]] not in roomDef.BLOCKING:
 					posInt[1] += 1
 					didMove = True
-				elif charm and currentRoom.body[posInt[1] + 2][posInt[0]] != '#':
+				elif charm and currentRoom.body[posInt[1] + 2][posInt[0]] not in roomDef.BLOCKING:
 					posInt[1] += 2
 					didMove = True
+				else:
+					newInfo = 'You can\'t move that way.'
 			elif posInt[0] == int(const.ROOM_WIDTH / 2) and currentRoom.neighbours[2] is not None:
 				posInt[1] = 0
 				posRooms[1] += 1
 				didMove = True
-		elif command == 'k':
+		elif command == 'k' or command == 'w':
 			if posInt[1] > 0:
-				if currentRoom.body[posInt[1] - 1][posInt[0]] != '#':
+				if currentRoom.monsters[(posInt[0], posInt[1] - 1)] is not None:
+					if currentRoom.monsters[(posInt[0], posInt[1] - 1)].hit(attack):
+						loadedMonsters.remove(currentRoom.monsters[(posInt[0], posInt[1] - 1)])
+						currentRoom.monsters[(posInt[0], posInt[1] - 1)] = None
+						didMove = True
+				elif currentRoom.body[posInt[1] - 1][posInt[0]] not in roomDef.BLOCKING:
 					posInt[1] -= 1
 					didMove = True
-				elif charm and currentRoom.body[posInt[1] - 2][posInt[0]] != '#':
+				elif charm and currentRoom.body[posInt[1] - 2][posInt[0]] not in roomDef.BLOCKING:
 					posInt[1] -= 2
 					didMove = True
+				else:
+					newInfo = 'You can\'t move that way.'
 			elif posInt[0] == int(const.ROOM_WIDTH / 2) and currentRoom.neighbours[0] is not None:
 				posInt[1] = const.ROOM_HEIGHT - 1
 				posRooms[1] -= 1
 				didMove = True
-		elif command == 'l':
+		elif command == 'l' or command == 'd':
 			if posInt[0] < const.ROOM_WIDTH - 1:
-				if currentRoom.body[posInt[1]][posInt[0] + 1] != '#':
+				if currentRoom.monsters[(posInt[0] + 1, posInt[1])] is not None:
+					if currentRoom.monsters[(posInt[0] + 1, posInt[1])].hit(attack):
+						loadedMonsters.remove(currentRoom.monsters[(posInt[0] + 1, posInt[1])])
+						currentRoom.monsters[(posInt[0] + 1, posInt[1])] = None
+						didMove = True
+				elif currentRoom.body[posInt[1]][posInt[0] + 1] not in roomDef.BLOCKING:
 					posInt[0] += 1
 					didMove = True
-				elif charm and currentRoom.body[posInt[1]][posInt[0] + 2]:
+				elif charm and currentRoom.body[posInt[1]][posInt[0] + 2] not in roomDef.BLOCKING:
 					posInt[0] += 2
 					didMove = True
+				else:
+					newInfo = 'You can\'t move that way.'
 			elif posInt[1] == int(const.ROOM_HEIGHT / 2) and currentRoom.neighbours[1] is not None:
 				posInt[0] = 0
 				posRooms[0] += 1
@@ -374,36 +454,75 @@ def playGame(gameMap):
 		# Diagonal
 		elif command == 'y':
 			if posInt[0] > 0 and posInt[1] > 0:
-				if currentRoom.body[posInt[1]-1][posInt[0]-1] != '#' and (charm or (currentRoom.body[posInt[1]-1][posInt[0]] != '#' and currentRoom.body[posInt[1]][posInt[0]-1] != '#')):
+				if currentRoom.monsters[(posInt[0]-1, posInt[1]-1)] is not None:
+					if currentRoom.monsters[(posInt[0] - 1, posInt[1] - 1)].hit(attack):
+						loadedMonsters.remove(currentRoom.monsters[(posInt[0] - 1, posInt[1] - 1)])
+						currentRoom.monsters[(posInt[0]-1, posInt[1]-1)] = None
+						didMove = True
+				elif currentRoom.body[posInt[1]-1][posInt[0]-1] not in roomDef.BLOCKING and (charm or (currentRoom.body[posInt[1]-1][posInt[0]] not in roomDef.BLOCKING and currentRoom.body[posInt[1]][posInt[0]-1] not in roomDef.BLOCKING)):
 					posInt[0] -= 1
 					posInt[1] -= 1
-				elif charm and currentRoom.body[posInt[1]-2][posInt[0]-2] != '#':
+					didMove = True
+				elif charm and currentRoom.body[posInt[1]-2][posInt[0]-2] not in roomDef.BLOCKING:
 					posInt[0] -= 2
 					posInt[1] -= 2
+					didMove = True
+				else:
+					newInfo = 'You can\'t move that way.'
 		elif command == 'u':
 			if posInt[0] < const.ROOM_WIDTH - 1 and posInt[1] > 0:
-				if currentRoom.body[posInt[1]-1][posInt[0]+1] != '#' and (charm or (currentRoom.body[posInt[1]-1][posInt[0]] != '#' and currentRoom.body[posInt[1]][posInt[0]+1] != '#')):
+				if currentRoom.monsters[(posInt[0]+1, posInt[1]-1)] is not None:
+					if currentRoom.monsters[(posInt[0] + 1, posInt[1] - 1)].hit(attack):
+						loadedMonsters.remove(currentRoom.monsters[(posInt[0] + 1, posInt[1] - 1)])
+						currentRoom.monsters[(posInt[0]+1, posInt[1]-1)] = None
+						didMove = True
+				elif currentRoom.body[posInt[1]-1][posInt[0]+1] not in roomDef.BLOCKING and (charm or (currentRoom.body[posInt[1]-1][posInt[0]] not in roomDef.BLOCKING and currentRoom.body[posInt[1]][posInt[0]+1] not in roomDef.BLOCKING)):
 					posInt[0] += 1
 					posInt[1] -= 1
-				elif charm and currentRoom.body[posInt[1]-2][posInt[0]+2] != '#':
+					didMove = True
+				elif charm and currentRoom.body[posInt[1]-2][posInt[0]+2] not in roomDef.BLOCKING:
 					posInt[0] += 2
 					posInt[1] -= 2
+					didMove = True
+				else:
+					newInfo = 'You can\'t move that way.'
 		elif command == 'b':
 			if posInt[0] > 0 and posInt[1] < const.ROOM_HEIGHT - 1:
-				if currentRoom.body[posInt[1]+1][posInt[0]-1] != '#' and (charm or (currentRoom.body[posInt[1]+1][posInt[0]] != '#' and currentRoom.body[posInt[1]][posInt[0]-1] != '#')):
+				if currentRoom.monsters[(posInt[0]-1, posInt[1]+1)] is not None:
+					if currentRoom.monsters[(posInt[0]-1, posInt[1]+1)].hit(attack):
+						loadedMonsters.remove(currentRoom.monsters[(posInt[0] - 1, posInt[1] + 1)])
+						currentRoom.monsters[(posInt[0]-1, posInt[1]+1)] = None
+						didMove = True
+				elif currentRoom.body[posInt[1]+1][posInt[0]-1] not in roomDef.BLOCKING and (charm or (currentRoom.body[posInt[1]+1][posInt[0]] not in roomDef.BLOCKING and currentRoom.body[posInt[1]][posInt[0]-1] not in roomDef.BLOCKING)):
 					posInt[0] -= 1
 					posInt[1] += 1
-				elif charm and currentRoom.body[posInt[1]+2][posInt[0]-2] != '#':
+					didMove = True
+				elif charm and currentRoom.body[posInt[1]+2][posInt[0]-2] not in roomDef.BLOCKING:
 					posInt[0] -= 2
 					posInt[1] += 2
+					didMove = True
+				else:
+					newInfo = 'You can\'t move that way.'
 		elif command == 'n':
 			if posInt[0] < const.ROOM_WIDTH - 1 and posInt[1] < const.ROOM_HEIGHT - 1:
-				if currentRoom.body[posInt[1]+1][posInt[0]+1] != '#' and (charm or (currentRoom.body[posInt[1]+1][posInt[0]] != '#' and currentRoom.body[posInt[1]][posInt[0]+1] != '#')):
+				if currentRoom.monsters[(posInt[0]+1, posInt[1]+1)] is not None:
+					if currentRoom.monsters[(posInt[0] + 1, posInt[1] + 1)].hit(attack):
+						loadedMonsters.remove(currentRoom.monsters[(posInt[0] + 1, posInt[1] + 1)])
+						currentRoom.monsters[(posInt[0]+1, posInt[1]+1)] = None
+						didMove = True
+				elif currentRoom.body[posInt[1]+1][posInt[0]+1] not in roomDef.BLOCKING and (charm or (currentRoom.body[posInt[1]+1][posInt[0]] not in roomDef.BLOCKING and currentRoom.body[posInt[1]][posInt[0]+1] not in roomDef.BLOCKING)):
 					posInt[0] += 1
 					posInt[1] += 1
-				elif charm and currentRoom.body[posInt[1]+2][posInt[0]+2] != '#':
+					didMove = True
+				elif charm and currentRoom.body[posInt[1]+2][posInt[0]+2] not in roomDef.BLOCKING:
 					posInt[0] += 2
 					posInt[1] += 2
+					didMove = True
+				else:
+					newInfo = 'You can\'t move that way.'
+		# Rest
+		elif command == 'z':
+			didMove = True
 
 		# Quit and suspend
 		elif command == 'q' or command == 'quit':
@@ -413,38 +532,183 @@ def playGame(gameMap):
 			io.putHighScore('Killed yourself', score)
 			rd.highscores(io.getHighScores())
 			return
-		elif command == 's':
+		elif command == 'p':
 			rd.suspend()
 
+		# Seed and difficulty
+		elif command == 'seed':
+			newInfo = 'Seed: ' + seed
+		elif command == 'diff' or command == 'difficulty':
+			newInfo = 'Difficulty: ' + difficulty
+
+		# Help
+		elif command == '?':
+			rd.commands()
+
+		# Debug commands
 		elif const.DEBUG:
 			if command.startswith('d'):
 				try:
-					depth = int(command[1:])
-					currentDepth = gameMap[depth]
-					posRooms = list(currentDepth[len(currentDepth) - 1][0])
+					d = int(command[1:])
+					if d <= const.MAX_DEPTH:
+						depth = d
+						currentDepth = gameMap[depth]
+						posRooms = list(currentDepth[len(currentDepth) - 1][0])
+						currentDepthRooms = []
+						itemsDetected = False
+						for y in range(len(currentDepth) - 1):
+							for room in currentDepth[y]:
+								if room is not None:
+									currentDepthRooms.append(room)
+						loadedMonsters = generateMonsters(currentDepthRooms, depth)
 				except Exception:
 					pass
 
 		if didMove:
-			explored[depth][posRooms[1]][posRooms[0]] = True # Room is explored
-			currentRoom = currentDepth[posRooms[1]][posRooms[0]] # currentRoom is up to date
-
+			newInfo = ''
 			if currentDepth[posRooms[1]][posRooms[0]].downstair is not None and posInt[0] == currentDepth[posRooms[1]][posRooms[0]].downstair[0] and posInt[1] == currentDepth[posRooms[1]][posRooms[0]].downstair[1]:
 				# Downstairs
 				depth += 1
 				currentDepth = gameMap[depth]
+				currentDepthRooms = []
+				itemsDetected = False
+				for y in range(len(currentDepth) - 1):
+					for room in currentDepth[y]:
+						if room is not None:
+							currentDepthRooms.append(room)
+				loadedMonsters = generateMonsters(currentDepthRooms, depth)
+
 				posRooms = list(currentDepth[len(currentDepth) - 1][0])
 				posInt = list(currentDepth[posRooms[1]][posRooms[0]].entryPoint)
 			elif currentDepth[posRooms[1]][posRooms[0]].upstair is not None and posInt[0] == currentDepth[posRooms[1]][posRooms[0]].upstair[0] and posInt[1] == currentDepth[posRooms[1]][posRooms[0]].upstair[1]:
 				# Upstairs
 				depth -= 1
 				currentDepth = gameMap[depth]
+				currentDepthRooms = []
+				itemsDetected = False
+				for y in range(len(currentDepth) - 1):
+					for room in currentDepth[y]:
+						if room is not None:
+							currentDepthRooms.append(room)
+				loadedMonsters = generateMonsters(currentDepthRooms, depth)
+
 				posRooms = list(currentDepth[len(currentDepth) - 1][1])
 				posInt = list(currentDepth[posRooms[1]][posRooms[0]].entryPoint)
 			elif currentDepth[posRooms[1]][posRooms[0]].exit is not None and posInt[0] == currentDepth[posRooms[1]][posRooms[0]].exit[0] and posInt[1] == currentDepth[posRooms[1]][posRooms[0]].exit[1]:
-				io.putHighScore('Left the dungeon', score)
-				rd.highscores(io.getHighScores())
-				return
+				if charm:
+					io.putHighScore('Left the dungeon', score)
+					rd.highscores(io.getHighScores())
+					return
+				else:
+					newInfo = "You can't teleport up to the helicopter without the Charm"
+
+			explored[depth][posRooms[1]][posRooms[0]] = True # Room is explored
+			currentRoom = currentDepth[posRooms[1]][posRooms[0]] # currentRoom is up to date
+
+			if (posInt[0], posInt[1]) in currentRoom.items:
+				modifiers = currentRoom.items[(posInt[0], posInt[1])].collect()
+				health += modifiers[0]
+				armour += modifiers[1]
+				attack += modifiers[2]
+				score  += modifiers[3]
+
+				newInfo = modifiers[4]
+
+				if modifiers[5] & 0b01 is not 0:
+					itemsDetected = True
+				if modifiers[5] & 0b10 is not 0:
+					charm = True
+
+				del currentRoom.items[(posInt[0], posInt[1])]
+
+			if not noclip:
+				for monster in loadedMonsters:
+					monster.room.monsters[(monster.x, monster.y)] = None
+
+					direction = monster.move(posRooms[0], posRooms[1], posInt[0], posInt[1])
+					if direction == 0: # North
+						if monster.y == 0:
+							if currentDepth[monster.room.y - 1][monster.room.x].monsters[(monster.x, const.ROOM_HEIGHT - 1)] is None:
+								monster.room = currentDepth[monster.room.y - 1][monster.room.x]
+								monster.y = const.ROOM_HEIGHT - 1
+							monster.target = randLib.choice([i for i in range(0, 4) if monster.room.neighbours[i] is not None])
+						else:
+							if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x == posInt[0] and monster.y - 1 == posInt[1]:
+								health -= monster.attack() / armour
+								newInfo = monster.attackmsg()
+							else:
+								monster.y -= 1
+					elif direction == 1: # North-East
+						if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x + 1 == posInt[0] and monster.y - 1 == posInt[1]:
+							health -= monster.attack() / armour
+							newInfo = monster.attackmsg()
+						else:
+							monster.x += 1
+							monster.y -= 1
+					elif direction == 2: # East
+						if monster.x == const.ROOM_WIDTH - 1:
+							if currentDepth[monster.room.y][monster.room.x + 1].monsters[(0, monster.y)] is None:
+								monster.room = currentDepth[monster.room.y][monster.room.x + 1]
+								monster.x = 0
+							monster.target = randLib.choice([i for i in range(0, 4) if monster.room.neighbours[i] is not None])
+						else:
+							if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x + 1 == posInt[0] and monster.y == posInt[1]:
+								health -= monster.attack() / armour
+								newInfo = monster.attackmsg()
+							else:
+								monster.x += 1
+					elif direction == 3: # South-East
+						if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x + 1 == posInt[0] and monster.y + 1 == posInt[1]:
+							health -= monster.attack() / armour
+							newInfo = monster.attackmsg()
+						else:
+							monster.x += 1
+							monster.y += 1
+					elif direction == 4: # South
+						if monster.y == const.ROOM_HEIGHT - 1:
+							if currentDepth[monster.room.y + 1][monster.room.x].monsters[(monster.x, 0)] is None:
+								monster.room = currentDepth[monster.room.y + 1][monster.room.x]
+								monster.y = 0
+							monster.target = randLib.choice([i for i in range(0, 4) if monster.room.neighbours[i] is not None])
+						else:
+							if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x == posInt[0] and monster.y + 1 == posInt[1]:
+								health -= monster.attack() / armour
+								newInfo = monster.attackmsg()
+							else:
+								monster.y += 1
+					elif direction == 5: # South-West
+						if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x - 1 == posInt[0] and monster.y + 1 == posInt[1]:
+							health -= monster.attack() / armour
+							newInfo = monster.attackmsg()
+						else:
+							monster.x -= 1
+							monster.y += 1
+					elif direction == 6: # West
+						if monster.x == 0:
+							if currentDepth[monster.room.y][monster.room.x - 1].monsters[(const.ROOM_WIDTH - 1, monster.y)] is None:
+								monster.room = currentDepth[monster.room.y][monster.room.x - 1]
+								monster.x = const.ROOM_WIDTH - 1
+							monster.target = randLib.choice([i for i in range(0, 4) if monster.room.neighbours[i] is not None])
+						else:
+							if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x - 1 == posInt[0] and monster.y == posInt[1]:
+								health -= monster.attack() / armour
+								newInfo = monster.attackmsg()
+							else:
+								monster.x -= 1
+					elif direction == 7: # North-West
+						if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x - 1 == posInt[0] and monster.y - 1 == posInt[1]:
+							health -= monster.attack() / armour
+							newInfo = monster.attackmsg()
+						else:
+							monster.x -= 1
+							monster.y -= 1
+
+					if health <= 0:
+						io.putHighScore(monster.killedBy() + ' on depth ' + str(depth), score)
+						rd.highscores(io.getHighScores())
+						return
+
+					monster.room.monsters[(monster.x, monster.y)] = monster
 
 		if track is not None:
 			if track.poll() is not None:
