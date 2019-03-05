@@ -291,4 +291,7 @@ def thankyou():
 
 
 def reallyquit():
-	return input('Really quit? (y/n): ') == 'y'
+	return input('Really quit (y/n)? ') == 'y'
+
+def cont():
+	return input('Play again (y/n)? ') == 'y'

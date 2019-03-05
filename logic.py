@@ -374,6 +374,8 @@ def playGame(gameMap, difficulty, seed):
 			print('You died...')
 			input('Press enter to continue.')
 			rd.highscores(io.getHighScores())
+			if track is not None:
+				track.terminate()
 			return
 
 		if newInfo != '':
@@ -574,12 +576,12 @@ def playGame(gameMap, difficulty, seed):
 			didMove = True
 
 		# Quit and suspend
-		elif command == 'q' or command == 'quit' and rd.reallyquit():
-			if track is not None:
-				track.terminate()
-			keyListener.stop()
-			io.putHighScore('Killed yourself', score)
-			health = 0
+		elif command == 'q' or command == 'quit':
+			input('Press enter to continue.')
+			if rd.reallyquit():
+				keyListener.stop()
+				io.putHighScore('Quit on depth ' + str(depth), score)
+				health = 0
 		elif command == 'p':
 			rd.suspend()
 
@@ -783,6 +785,11 @@ def playGame(gameMap, difficulty, seed):
 					health = math.ceil(health)
 
 					if health <= 0:
+						if type(monster) == monsters.Lek:
+							if track is not None:
+								track.terminate()
+
+							track = Popen(['/usr/bin/afplay', filePath + '/data/rubbed by lek.mp3'])
 						io.putHighScore(monster.killedBy() + ' on depth ' + str(depth), score)
 						died = True
 						break

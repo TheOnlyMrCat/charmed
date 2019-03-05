@@ -7,6 +7,7 @@ is seeded, given difficulty, and balanced to be extremely difficult.
 ## Installation
 ### Prerequisites
 Go into System Preferences > Security and Privacy > Privacy.
+Click the lock and enter your password
 Under accessibility, click the + button beneath the list.
 A window will pop up showing all your applications. Find Terminal
 in the Utilities folder and double-click on it.
