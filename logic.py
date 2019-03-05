@@ -1,6 +1,6 @@
 from room import *
-from objects.item import definitions as items
-from objects.monster import definitions as monsters
+from item import definitions as items
+from monster import definitions as monsters
 from typing import List, Any
 from subprocess import Popen
 from pynput import keyboard
@@ -217,7 +217,7 @@ def generateMap(difficulty, seed=randLib.seed):
 				if currentRoom is not None:
 					numitems = max(rand(-5, 2), 0)
 					for i in range(numitems):
-						item = random.choice(items.possibleItems[difficulty][depth])
+						item = random.choice(items.possibleItems[difficulty - 1][depth])
 
 						x, y = rand(0, const.ROOM_WIDTH - 1), rand(0, const.ROOM_HEIGHT - 1)
 						while (x, y) in currentRoom.items or currentRoom.body[y][x] in room.BLOCKING:
@@ -231,6 +231,8 @@ def generateMap(difficulty, seed=randLib.seed):
 							currentRoom.items[(x, y)] = items.Detector(currentRoom, x, y)
 						if item is 3:
 							currentRoom.items[(x, y)] = items.Boost(currentRoom, x, y, depth)
+						if item is 4:
+							currentRoom.items[(x, y)] = items.MonsterTrap(currentRoom, x, y)
 
 	return generatedMap
 
@@ -276,7 +278,7 @@ def generateMonsters(rooms, depth, difficulty):
 	for currentRoom in rooms:
 		nummonsters = max(rand(-3, 2), 0)
 		for i in range(nummonsters):
-			monster = random.choice(monsters.possibleMonsters[depth])
+			monster = random.choice(monsters.possibleMonsters[depth + difficulty - 1])
 
 			x, y = rand(0, const.ROOM_WIDTH - 1), rand(0, const.ROOM_HEIGHT - 1)
 			while currentRoom.body[y][x] in room.BLOCKING:
@@ -312,6 +314,7 @@ def playGame(gameMap, difficulty, seed):
 	attack = const.START_ATTACK
 	score = 0
 	charm = False
+	died = False
 	explored = []
 
 	global command, keyPressed
@@ -367,6 +370,12 @@ def playGame(gameMap, difficulty, seed):
 
 		rd.room(currentRoom, itemsDetected, posInt)
 
+		if health <= 0:
+			print('You died...')
+			input('Press enter to continue.')
+			rd.highscores(io.getHighScores())
+			return
+
 		if newInfo != '':
 			print(newInfo)
 			newInfo = ''
@@ -401,6 +410,10 @@ def playGame(gameMap, difficulty, seed):
 			itemsDetected = True
 		elif command == 'noclip':  # Stop monsters moving
 			noclip = not noclip
+		elif command == 'deadlylazer': # The sun is a deadly lazer
+			for monster in loadedMonsters:
+				monster.room.monsters[(monster.x, monster.y)] = None
+				loadedMonsters.remove(monster)
 
 		# Movement - Cardinal
 		elif command == 'h' or command == 'a':
@@ -410,7 +423,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0] - 1, posInt[1])].hit(attack):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] - 1, posInt[1])])
 						currentRoom.monsters[(posInt[0] - 1, posInt[1])] = None
-						didMove = True
+					didMove = True
 				elif currentRoom.body[posInt[1]][posInt[0] - 1] not in roomDef.BLOCKING:
 					posInt[0] -= 1
 					didMove = True
@@ -430,7 +443,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0], posInt[1] + 1)].hit(attack):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0], posInt[1] + 1)])
 						currentRoom.monsters[(posInt[0], posInt[1] + 1)] = None
-						didMove = True
+					didMove = True
 				elif currentRoom.body[posInt[1] + 1][posInt[0]] not in roomDef.BLOCKING:
 					posInt[1] += 1
 					didMove = True
@@ -450,7 +463,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0], posInt[1] - 1)].hit(attack):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0], posInt[1] - 1)])
 						currentRoom.monsters[(posInt[0], posInt[1] - 1)] = None
-						didMove = True
+					didMove = True
 				elif currentRoom.body[posInt[1] - 1][posInt[0]] not in roomDef.BLOCKING:
 					posInt[1] -= 1
 					didMove = True
@@ -470,7 +483,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0] + 1, posInt[1])].hit(attack):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] + 1, posInt[1])])
 						currentRoom.monsters[(posInt[0] + 1, posInt[1])] = None
-						didMove = True
+					didMove = True
 				elif currentRoom.body[posInt[1]][posInt[0] + 1] not in roomDef.BLOCKING:
 					posInt[0] += 1
 					didMove = True
@@ -491,7 +504,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0] - 1, posInt[1] - 1)].hit(attack):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] - 1, posInt[1] - 1)])
 						currentRoom.monsters[(posInt[0] - 1, posInt[1] - 1)] = None
-						didMove = True
+					didMove = True
 				elif currentRoom.body[posInt[1] - 1][posInt[0] - 1] not in roomDef.BLOCKING and (charm or (currentRoom.body[posInt[1] - 1][posInt[0]] not in roomDef.BLOCKING and currentRoom.body[posInt[1]][posInt[0] - 1] not in roomDef.BLOCKING)):
 					posInt[0] -= 1
 					posInt[1] -= 1
@@ -509,7 +522,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0] + 1, posInt[1] - 1)].hit(attack):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] + 1, posInt[1] - 1)])
 						currentRoom.monsters[(posInt[0] + 1, posInt[1] - 1)] = None
-						didMove = True
+					didMove = True
 				elif currentRoom.body[posInt[1] - 1][posInt[0] + 1] not in roomDef.BLOCKING and (charm or (currentRoom.body[posInt[1] - 1][posInt[0]] not in roomDef.BLOCKING and currentRoom.body[posInt[1]][posInt[0] + 1] not in roomDef.BLOCKING)):
 					posInt[0] += 1
 					posInt[1] -= 1
@@ -527,7 +540,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0] - 1, posInt[1] + 1)].hit(attack):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] - 1, posInt[1] + 1)])
 						currentRoom.monsters[(posInt[0] - 1, posInt[1] + 1)] = None
-						didMove = True
+					didMove = True
 				elif currentRoom.body[posInt[1] + 1][posInt[0] - 1] not in roomDef.BLOCKING and (charm or (currentRoom.body[posInt[1] + 1][posInt[0]] not in roomDef.BLOCKING and currentRoom.body[posInt[1]][posInt[0] - 1] not in roomDef.BLOCKING)):
 					posInt[0] -= 1
 					posInt[1] += 1
@@ -545,7 +558,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0] + 1, posInt[1] + 1)].hit(attack):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] + 1, posInt[1] + 1)])
 						currentRoom.monsters[(posInt[0] + 1, posInt[1] + 1)] = None
-						didMove = True
+					didMove = True
 				elif currentRoom.body[posInt[1] + 1][posInt[0] + 1] not in roomDef.BLOCKING and (charm or (currentRoom.body[posInt[1] + 1][posInt[0]] not in roomDef.BLOCKING and currentRoom.body[posInt[1]][posInt[0] + 1] not in roomDef.BLOCKING)):
 					posInt[0] += 1
 					posInt[1] += 1
@@ -561,13 +574,12 @@ def playGame(gameMap, difficulty, seed):
 			didMove = True
 
 		# Quit and suspend
-		elif command == 'q' or command == 'quit':
+		elif command == 'q' or command == 'quit' and rd.reallyquit():
 			if track is not None:
 				track.terminate()
 			keyListener.stop()
 			io.putHighScore('Killed yourself', score)
-			rd.highscores(io.getHighScores())
-			return
+			health = 0
 		elif command == 'p':
 			rd.suspend()
 
@@ -593,15 +605,14 @@ def playGame(gameMap, difficulty, seed):
 						currentDepthRooms = []
 						itemsDetected = False
 						for y in range(len(currentDepth) - 1):
-							for room in currentDepth[y]:
-								if room is not None:
-									currentDepthRooms.append(room)
+							for eachRoom in currentDepth[y]:
+								if eachRoom is not None:
+									currentDepthRooms.append(eachRoom)
 						loadedMonsters = generateMonsters(currentDepthRooms, depth, difficulty)
 				except Exception:
 					pass
 
 		if didMove:
-			newInfo = ''
 			if currentDepth[posRooms[1]][posRooms[0]].downstair is not None and posInt[0] == currentDepth[posRooms[1]][posRooms[0]].downstair[0] and posInt[1] == currentDepth[posRooms[1]][posRooms[0]].downstair[1]:
 				# Downstairs
 				depth += 1
@@ -609,9 +620,9 @@ def playGame(gameMap, difficulty, seed):
 				currentDepthRooms = []
 				itemsDetected = False
 				for y in range(len(currentDepth) - 1):
-					for room in currentDepth[y]:
-						if room is not None:
-							currentDepthRooms.append(room)
+					for eachRoom in currentDepth[y]:
+						if eachRoom is not None:
+							currentDepthRooms.append(eachRoom)
 				loadedMonsters = generateMonsters(currentDepthRooms, depth, difficulty)
 
 				posRooms = list(currentDepth[len(currentDepth) - 1][0])
@@ -623,9 +634,9 @@ def playGame(gameMap, difficulty, seed):
 				currentDepthRooms = []
 				itemsDetected = False
 				for y in range(len(currentDepth) - 1):
-					for room in currentDepth[y]:
-						if room is not None:
-							currentDepthRooms.append(room)
+					for eachRoom in currentDepth[y]:
+						if eachRoom is not None:
+							currentDepthRooms.append(eachRoom)
 				loadedMonsters = generateMonsters(currentDepthRooms, depth, difficulty)
 
 				posRooms = list(currentDepth[len(currentDepth) - 1][1])
@@ -643,24 +654,49 @@ def playGame(gameMap, difficulty, seed):
 
 			if (posInt[0], posInt[1]) in currentRoom.items:
 				modifiers = currentRoom.items[(posInt[0], posInt[1])].collect()
-				dhealth = modifiers[0];
+				dhealth = modifiers[0]
 				health += modifiers[0]
-				darmour = modifiers[1];
+				darmour = modifiers[1]
 				armour += modifiers[1]
-				dattack = modifiers[2];
+				dattack = modifiers[2]
 				attack += modifiers[2]
-				dscore = modifiers[3];
+				dscore = modifiers[3]
 				score += modifiers[3]
 
 				newInfo = modifiers[4]
 
-				if modifiers[5] & 0b01 is not 0:
+				if modifiers[5] & 0b001 is not 0:
 					itemsDetected = True
-				if modifiers[5] & 0b10 is not 0:
+				if modifiers[5] & 0b010 is not 0:
 					charm = True
+				if modifiers[5] & 0b100 is not 0:
+					for i in range(rand(2, 5)):
+						monster = random.choice(monsters.possibleMonsters[depth + difficulty - 1])
+
+						x, y = rand(0, const.ROOM_WIDTH - 1), rand(0, const.ROOM_HEIGHT - 1)
+						while currentRoom.body[y][x] in room.BLOCKING:
+							x, y = rand(0, const.ROOM_WIDTH - 1), rand(0, const.ROOM_HEIGHT - 1)
+
+						if monster is 0:
+							new = monsters.Beetle(x, y, currentRoom, difficulty)
+						elif monster is 1:
+							new = monsters.Scorpion(x, y, currentRoom, difficulty)
+						elif monster is 2:
+							new = monsters.Mummy(x, y, currentRoom, difficulty)
+						elif monster is 3:
+							new = monsters.Slave(x, y, currentRoom, difficulty)
+						elif monster is 4:
+							new = monsters.Pharaoh(x, y, currentRoom, difficulty)
+						elif monster is 5:
+							new = monsters.Lek(x, y, currentRoom, difficulty)
+						elif monster is 6:
+							new = monsters.Chin(x, y, currentRoom, difficulty)
+						new.room.monsters[(x, y)] = new
+						loadedMonsters.append(new)
 
 				del currentRoom.items[(posInt[0], posInt[1])]
 
+			# Monster movement
 			if not noclip:
 				for monster in loadedMonsters:
 					monster.room.monsters[(monster.x, monster.y)] = None
@@ -675,14 +711,14 @@ def playGame(gameMap, difficulty, seed):
 							monster.target = randLib.choice([i for i in range(0, 4) if monster.room.neighbours[i] is not None])
 						else:
 							if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x == posInt[0] and monster.y - 1 == posInt[1]:
-								health -= monster.attack() / armour
-								newInfo = monster.attackmsg()
+								health -= math.ceil(monster.attack() / armour)
+								newInfo = ((newInfo + '; ') if newInfo != '' else '') + monster.attackmsg()
 							else:
 								monster.y -= 1
 					elif direction == 1:  # North-East
 						if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x + 1 == posInt[0] and monster.y - 1 == posInt[1]:
-							health -= monster.attack() / armour
-							newInfo = monster.attackmsg()
+							health -= math.ceil(monster.attack() / armour)
+							newInfo = ((newInfo + '; ') if newInfo != '' else '') + monster.attackmsg()
 						else:
 							monster.x += 1
 							monster.y -= 1
@@ -694,14 +730,14 @@ def playGame(gameMap, difficulty, seed):
 							monster.target = randLib.choice([i for i in range(0, 4) if monster.room.neighbours[i] is not None])
 						else:
 							if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x + 1 == posInt[0] and monster.y == posInt[1]:
-								health -= monster.attack() / armour
-								newInfo = monster.attackmsg()
+								health -= math.ceil(monster.attack() / armour)
+								newInfo = ((newInfo + '; ') if newInfo != '' else '') + monster.attackmsg()
 							else:
 								monster.x += 1
 					elif direction == 3:  # South-East
 						if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x + 1 == posInt[0] and monster.y + 1 == posInt[1]:
-							health -= monster.attack() / armour
-							newInfo = monster.attackmsg()
+							health -= math.ceil(monster.attack() / armour)
+							newInfo = ((newInfo + '; ') if newInfo != '' else '') + monster.attackmsg()
 						else:
 							monster.x += 1
 							monster.y += 1
@@ -713,14 +749,14 @@ def playGame(gameMap, difficulty, seed):
 							monster.target = randLib.choice([i for i in range(0, 4) if monster.room.neighbours[i] is not None])
 						else:
 							if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x == posInt[0] and monster.y + 1 == posInt[1]:
-								health -= monster.attack() / armour
-								newInfo = monster.attackmsg()
+								health -= math.ceil(monster.attack() / armour)
+								newInfo = ((newInfo + '; ') if newInfo != '' else '') + monster.attackmsg()
 							else:
 								monster.y += 1
 					elif direction == 5:  # South-West
 						if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x - 1 == posInt[0] and monster.y + 1 == posInt[1]:
-							health -= monster.attack() / armour
-							newInfo = monster.attackmsg()
+							health -= math.ceil(monster.attack() / armour)
+							newInfo = ((newInfo + '; ') if newInfo != '' else '') + monster.attackmsg()
 						else:
 							monster.x -= 1
 							monster.y += 1
@@ -732,14 +768,14 @@ def playGame(gameMap, difficulty, seed):
 							monster.target = randLib.choice([i for i in range(0, 4) if monster.room.neighbours[i] is not None])
 						else:
 							if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x - 1 == posInt[0] and monster.y == posInt[1]:
-								health -= monster.attack() / armour
-								newInfo = monster.attackmsg()
+								health -= math.ceil(monster.attack() / armour)
+								newInfo = ((newInfo + '; ') if newInfo != '' else '') + monster.attackmsg()
 							else:
 								monster.x -= 1
 					elif direction == 7:  # North-West
 						if monster.room.x == posRooms[0] and monster.room.y == posRooms[1] and monster.x - 1 == posInt[0] and monster.y - 1 == posInt[1]:
-							health -= monster.attack() / armour
-							newInfo = monster.attackmsg()
+							health -= math.ceil(monster.attack() / armour)
+							newInfo = ((newInfo + '; ') if newInfo != '' else '') + monster.attackmsg()
 						else:
 							monster.x -= 1
 							monster.y -= 1
@@ -748,11 +784,17 @@ def playGame(gameMap, difficulty, seed):
 
 					if health <= 0:
 						io.putHighScore(monster.killedBy() + ' on depth ' + str(depth), score)
-						rd.highscores(io.getHighScores())
-						return
+						died = True
+						break
 					dhealth = health - oldHealth
 
 					monster.room.monsters[(monster.x, monster.y)] = monster
+
+			if health <= 0 and not died:
+				io.putHighScore('Killed by magic on depth ' + str(depth), score)
+
+			armour = max(armour, 1)
+			attack = max(attack, 1)
 
 		if track is not None:
 			if track.poll() is not None:

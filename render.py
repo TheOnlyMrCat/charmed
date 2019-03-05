@@ -57,7 +57,7 @@ def difficulty():
 	print("            [2] What's in here? (Recommended)")
 	print('            [3] Hurt me plenty! (Monsters have more health and attack, and harmful items spawn more frequently)')
 	print("            [4] Just kill me. (Monsters have more health and attack, and helpful items are extremely rare")
-	return input('Input a value: ')
+	return int(input('Input a value: '))
 
 
 def seed():
@@ -94,7 +94,6 @@ def commands():
 	print('          \x1b[48;5;21mh\x1b[38;5;0m\x1b[48;5;46mj\x1b[38;5;15m\x1b[48;5;196mk\x1b[38;5;0m\x1b[48;5;226ml\x1b[0;97;40m')
 	print('          \x1b[48;5;29mb\x1b[38;5;0m\x1b[48;5;154mn')
 	print(blankf + "WASD also works, but doesn't support diagonal movement")
-	print()
 	print('Press "z" to skip moving for the turn')
 	print()
 	print('Commands: q: Quit game')
@@ -125,24 +124,32 @@ def header():
 
 def stats(health, dhealth, attack, dattack, armour, darmour, score, dscore, charm):
 	print('Health: ', end='')
-	print('♥' * int(max(health / 5, 1)))
-	if dhealth > 0:
+	print('♥' * int(max(health / 5, 1)), end='')
+	if dhealth != 0:
 		print('(+' + str(dhealth) + ')')
+	else:
+		print()
 
 	print('Armour: ', end='')
-	print('✚' * int(max(armour / 5, 1)))
-	if darmour > 0:
+	print('✚' * int(max(armour / 5, 1)), end='')
+	if darmour != 0:
 		print('(+' + str(darmour) + ')')
+	else:
+		print()
 
 	print('Attack: ', end='')
-	print('♠︎' * int(max(attack / 5, 1)))
-	if dattack > 0:
+	print('♠︎' * int(max(attack / 5, 1)), end='')
+	if dattack != 0:
 		print('(+' + str(darmour) + ')')
+	else:
+		print()
 
 	print('Score:', score, end='')
-	print('℧' if charm else '')
+	print('℧' if charm else '', end='')
 	if dscore > 0:
 		print('(+' + str(dscore) + ')')
+	else:
+		print()
 
 
 def rooms(roomMap: List[List[int]], pos: List[int]):
@@ -281,3 +288,7 @@ def thankyou():
 	header()
 	print('Thanks for playing!')
 	print()
+
+
+def reallyquit():
+	return input('Really quit? (y/n): ') == 'y'

@@ -1,6 +1,6 @@
 from typing import Dict, Tuple
-from objects.item import Item
-from objects.monster import Monster
+from item import Item
+from monster import Monster
 
 import constants as const
 import random
