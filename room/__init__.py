@@ -14,17 +14,17 @@ def mapToOutput(d: str) -> str:
 	c = d[0]
 	if c == '.':
 		return rd.floor
-	elif c == 'w':
+	elif d == 'w':
 		return rd.shallow
-	elif c == 'W':
+	elif d == 'W':
 		return rd.water
-	elif c == 'l':
+	elif d == 'l':
 		return rd.lava
 	elif c == '"':
 		return rd.grass
-	elif c == '#':
+	elif d == '#':
 		return rd.wall
-	elif c == '#p':
+	elif d == '#p':
 		return rd.pillar
 	elif c == ',':
 		return rd.rubble

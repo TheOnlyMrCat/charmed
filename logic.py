@@ -209,19 +209,19 @@ def generateMap(difficulty, seed=randLib.seed):
 
 				newRoom: Room = None
 				if i is 1 and currentRoom.y is not 0 and currentMap[currentRoom.y - 1][currentRoom.x] is None and rand(0, 100) < 50:
-					newRoom = Room(currentRoom.x, currentRoom.y - 1, bodies.GENERIC)
+					newRoom = Room(currentRoom.x, currentRoom.y - 1, bodies.GENERIC if depth < 4 else bodies.GENERICL)
 					currentMap[currentRoom.y - 1][currentRoom.x] = newRoom
 
 				if i is 2 and currentRoom.x is not const.MAP_WIDTH - 1 and currentMap[currentRoom.y][currentRoom.x + 1] is None and rand(0, 100) < 50:
-					newRoom = Room(currentRoom.x + 1, currentRoom.y, bodies.GENERIC)
+					newRoom = Room(currentRoom.x + 1, currentRoom.y, bodies.GENERIC if depth < 4 else bodies.GENERICL)
 					currentMap[currentRoom.y][currentRoom.x + 1] = newRoom
 
 				if i is 3 and currentRoom.y is not const.MAP_HEIGHT - 1 and currentMap[currentRoom.y + 1][currentRoom.x] is None and rand(0, 100) < 50:
-					newRoom = Room(currentRoom.x, currentRoom.y + 1, bodies.GENERIC)
+					newRoom = Room(currentRoom.x, currentRoom.y + 1, bodies.GENERIC if depth < 4 else bodies.GENERICL)
 					currentMap[currentRoom.y + 1][currentRoom.x] = newRoom
 
 				if i is 4 and currentRoom.x is not 0 and currentMap[currentRoom.y][currentRoom.x - 1] is None and rand(0, 100) < 50:
-					newRoom = Room(currentRoom.x - 1, currentRoom.y, bodies.GENERIC)
+					newRoom = Room(currentRoom.x - 1, currentRoom.y, bodies.GENERIC if depth < 4 else bodies.GENERICL)
 					currentMap[currentRoom.y][currentRoom.x - 1] = newRoom
 
 				if newRoom is not None:
@@ -436,20 +436,13 @@ def playGame(gameMap, difficulty, seed):
 
 		if command == ':':
 			input('')
-			command = input('Enter command: ')
+			command = input('Enter command: ').lower()
 
 		didMove = False
 		log('Command: "' + command + '"')
 
-		# Megalovania: TODO: Remove from GJ Version
-		if command == 'megalovania':
-			if track is not None:
-				track.terminate()
-
-			track = Popen(['/usr/bin/afplay', filePath + '/data/music (hidden).mp3'])
-
 		# Movement - Cardinal
-		elif command == 'h' or command == 'a':
+		if command == 'h' or command == 'a':
 			if posInt[0] > 0:
 				if currentRoom.monsters[(posInt[0] - 1, posInt[1])] is not None:
 					newInfo = currentRoom.monsters[(posInt[0] - 1, posInt[1])].hitmsg()
@@ -856,11 +849,6 @@ def playGame(gameMap, difficulty, seed):
 					health = math.ceil(health)
 
 					if health <= 0:
-						if type(monster) == monsters.Sand:
-							if track is not None:
-								track.terminate()
-
-							track = Popen(['/usr/bin/afplay', filePath + '/data/rubbed by lek.mp3'])
 						io.putHighScore(monster.killedBy() + ' on depth ' + str(depth), score)
 						died = True
 						break

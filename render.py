@@ -12,7 +12,7 @@ floor = blankf + '.'
 wallf = '\x1b[38;5;15m\x1b[48;5;136m'
 wall = wallf + '#'
 
-pillarf = '\x1b[38;5;235m\x1b[48;5;245m'
+pillarf = '\x1b[38;5;255m\x1b[48;5;245m'
 pillar = pillarf + '#'
 
 shallowf = '\x1b[0;97;46m'
@@ -126,21 +126,21 @@ def stats(health, dhealth, attack, dattack, armour, darmour, score, dscore, char
 	print('Health: ', end='')
 	print('♥' * int(max(health / 5, 1)), end='')
 	if dhealth != 0:
-		print('(+' + str(dhealth) + ')')
+		print('(' + ('+' if dhealth >= 0 else '') + str(dhealth) + ')')
 	else:
 		print()
 
 	print('Armour: ', end='')
 	print('✚' * int(max(armour / 5, 1)), end='')
 	if darmour != 0:
-		print('(+' + str(darmour) + ')')
+		print('(' + ('+' if darmour >= 0 else '') + str(darmour) + ')')
 	else:
 		print()
 
 	print('Attack: ', end='')
 	print('♠︎' * int(max(attack / 5, 1)), end='')
 	if dattack != 0:
-		print('(+' + str(darmour) + ')')
+		print('(' + ('+' if dattack >= 0 else '') + str(dattack) + ')')
 	else:
 		print()
 
