@@ -5,7 +5,8 @@ Charm of Relativity found on the ninth level. The random generation
 is seeded, given difficulty, and balanced to be extremely difficult.
 
 ## Installation
-### Prerequisites
+### Mac
+#### Prerequisites
 Go into System Preferences > Security and Privacy > Privacy.
 Click the lock and enter your password
 Under accessibility, click the + button beneath the list.
@@ -16,7 +17,7 @@ This will allow Charmed to get keyboard events when it is running.
 This is necessary because you don't want to press enter after every
 movement command.
 
-### Running
+#### Running
 Download the repository from the downloads section in the sidebar.
 Double-click on `run.command`. If you get an error message saying
 the file isn't executable, navigate to the directory in terminal and

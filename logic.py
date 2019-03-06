@@ -29,7 +29,7 @@ def generateMap(difficulty, seed=randLib.seed):
 
 	generatedMap: List[List[Any]] = []
 
-	for depth in range(const.MAX_DEPTH):
+	for depth in range(const.MAX_DEPTH + 1):
 		currentMap: List[List[Any]] = []
 
 		log('Depth', depth)
@@ -38,6 +38,9 @@ def generateMap(difficulty, seed=randLib.seed):
 			currentMap.append([])
 			for currentRoom in range(const.MAP_WIDTH):
 				currentMap[row].append(None)
+
+		if difficulty == 4:
+			pathRooms = []
 
 		log('Path')
 		# 1 = N, 2 = E, 3 = S, 4 = W
@@ -52,9 +55,13 @@ def generateMap(difficulty, seed=randLib.seed):
 
 			currentMap[beginLoc[1]][beginLoc[0]] = Room(beginLoc[0], beginLoc[1], bodies.EXIT if depth is 0 else bodies.UPSTAIR)
 			if depth is const.MAX_DEPTH - 1:
-				charmRoom = Room(endLoc[0], endLoc[1], bodies.CHARM)
-				charmRoom.items[(int(const.ROOM_WIDTH / 2), int(const.ROOM_HEIGHT / 2))] = items.Charm(room, int(const.ROOM_WIDTH / 2), int(const.ROOM_HEIGHT / 2))
+				charmRoom = Room(endLoc[0], endLoc[1], bodies.ITEM)
+				charmRoom.items[(charmRoom.entryPoint)] = items.Charm(room, charmRoom.entryPoint[0], charmRoom.entryPoint[1])
 				currentMap[endLoc[1]][endLoc[0]] = charmRoom
+			elif depth is const.MAX_DEPTH:
+				curseRoom = Room(endLoc[0], endLoc[1], bodies.ITEM)
+				curseRoom.items[(curseRoom.entryPoint)] = items.Cursed(room, curseRoom.entryPoint[0], curseRoom.entryPoint[1])
+				currentMap[endLoc[1]][endLoc[0]] = curseRoom
 			else:
 				currentMap[endLoc[1]][endLoc[0]] = Room(endLoc[0], endLoc[1], bodies.DOWNSTAIR)
 
@@ -107,20 +114,28 @@ def generateMap(difficulty, seed=randLib.seed):
 					lastRoomDir = newDir
 
 					roomsToRandomise.append(newRoom)
+					if difficulty == 4:
+						pathRooms.append(newRoom)
 				else:
 					lastRoom.neighbours[newDir - 1] = finRoom
 					finRoom.neighbours[(newDir + 2) % 4 - 1] = lastRoom
 
 					roomsToRandomise.append(finRoom)
+					if difficulty == 4:
+						pathRooms.append(newRoom)
 		else:
 			beginLoc = (rand(0, const.MAP_WIDTH - 1), 0 if beginSide is 1 else const.MAP_HEIGHT - 1)
 			endLoc = (rand(0, const.MAP_WIDTH - 1), 0 if endSide is 1 else const.MAP_HEIGHT - 1)
 
 			currentMap[beginLoc[1]][beginLoc[0]] = Room(beginLoc[0], beginLoc[1], bodies.EXIT if depth is 0 else bodies.UPSTAIR)
 			if depth is const.MAX_DEPTH - 1:
-				charmRoom = Room(endLoc[0], endLoc[1], bodies.CHARM)
+				charmRoom = Room(endLoc[0], endLoc[1], bodies.ITEM)
 				charmRoom.items[(int(const.ROOM_WIDTH / 2), int(const.ROOM_HEIGHT / 2))] = items.Charm(room, int(const.ROOM_WIDTH / 2), int(const.ROOM_HEIGHT / 2))
 				currentMap[endLoc[1]][endLoc[0]] = charmRoom
+			elif depth is const.MAX_DEPTH:
+				curseRoom = Room(endLoc[0], endLoc[1], bodies.ITEM)
+				curseRoom.items[(curseRoom.entryPoint)] = items.Cursed(room, curseRoom.entryPoint[0], curseRoom.entryPoint[1])
+				currentMap[endLoc[1]][endLoc[0]] = curseRoom
 			else:
 				currentMap[endLoc[1]][endLoc[0]] = Room(endLoc[0], endLoc[1], bodies.DOWNSTAIR)
 
@@ -173,11 +188,18 @@ def generateMap(difficulty, seed=randLib.seed):
 					lastRoomDir = newDir
 
 					roomsToRandomise.append(newRoom)
+					if difficulty == 4:
+						pathRooms.append(newRoom)
 				else:
 					lastRoom.neighbours[newDir - 1] = finRoom
 					finRoom.neighbours[(newDir + 2) % 4 - 1] = lastRoom
 
 					roomsToRandomise.append(finRoom)
+					if difficulty == 4:
+						pathRooms.append(newRoom)
+
+		if difficulty == 4:
+			secretCandidates = []
 
 		log('Branches')
 		while len(roomsToRandomise) is not 0:
@@ -207,6 +229,9 @@ def generateMap(difficulty, seed=randLib.seed):
 					newRoom.neighbours[(i + 1) % 4] = currentRoom
 					roomsToRandomise.append(newRoom)
 					log('[' + str(newRoom.x) + ', ' + str(newRoom.y) + ']')
+				else:
+					if difficulty == 4 and currentRoom not in pathRooms:
+						secretCandidates.append(currentRoom)
 			roomsToRandomise.remove(currentRoom)
 
 		generatedMap.append(currentMap)
@@ -233,6 +258,12 @@ def generateMap(difficulty, seed=randLib.seed):
 							currentRoom.items[(x, y)] = items.Boost(currentRoom, x, y, depth)
 						if item is 4:
 							currentRoom.items[(x, y)] = items.MonsterTrap(currentRoom, x, y)
+						if item is 5:
+							currentRoom.items[(x, y)] = items.Drop(currentRoom, x, y)
+
+		if difficulty == 4:
+			chosenRoom = random.choice(secretCandidates)
+			chosenRoom.items[(int(const.ROOM_WIDTH / 2), int(const.ROOM_HEIGHT / 2))] = items.Drop(chosenRoom, int(const.ROOM_WIDTH / 2), int(const.ROOM_HEIGHT / 2))
 
 	return generatedMap
 
@@ -273,7 +304,7 @@ def keyPress(key):
 		keyPressed = True
 
 
-def generateMonsters(rooms, depth, difficulty):
+def generateMonsters(rooms, depth, difficulty, cursed):
 	generated = []
 	for currentRoom in rooms:
 		nummonsters = max(rand(-3, 2), 0)
@@ -285,19 +316,35 @@ def generateMonsters(rooms, depth, difficulty):
 				x, y = rand(0, const.ROOM_WIDTH - 1), rand(0, const.ROOM_HEIGHT - 1)
 
 			if monster is 0:
-				new = monsters.Beetle(x, y, currentRoom, difficulty)
+				if cursed and rand(0, 1) == 0:
+					new = monsters.CursedBeetle(x, y, currentRoom, difficulty)
+				else:
+					new = monsters.Beetle(x, y, currentRoom, difficulty)
 			elif monster is 1:
-				new = monsters.Scorpion(x, y, currentRoom, difficulty)
+				if cursed and rand(0, 1) == 0:
+					new = monsters.CursedScorpion(x, y, currentRoom, difficulty)
+				else:
+					new = monsters.Scorpion(x, y, currentRoom, difficulty)
 			elif monster is 2:
-				new = monsters.Mummy(x, y, currentRoom, difficulty)
+				if cursed and rand(0, 1) == 0:
+					new = monsters.CursedMummy(x, y, currentRoom, difficulty)
+				else:
+					new = monsters.Mummy(x, y, currentRoom, difficulty)
 			elif monster is 3:
-				new = monsters.Slave(x, y, currentRoom, difficulty)
+				if cursed and rand(0, 1) == 0:
+					new = monsters.CursedSlave(x, y, currentRoom, difficulty)
+				else:
+					new = monsters.Slave(x, y, currentRoom, difficulty)
 			elif monster is 4:
 				new = monsters.Pharaoh(x, y, currentRoom, difficulty)
 			elif monster is 5:
-				new = monsters.Lek(x, y, currentRoom, difficulty)
+				new = monsters.Sand(x, y, currentRoom, difficulty)
 			elif monster is 6:
-				new = monsters.Chin(x, y, currentRoom, difficulty)
+				new = monsters.Warden(x, y, currentRoom, difficulty)
+			elif monster is 7:
+				new = monsters.Guardian(x, y, currentRoom, difficulty)
+			elif monster is 8:
+				new = monsters.Winged(x, y, currentRoom, difficulty)
 			new.room.monsters[(x, y)] = new
 			generated.append(new)
 	return generated
@@ -314,6 +361,7 @@ def playGame(gameMap, difficulty, seed):
 	attack = const.START_ATTACK
 	score = 0
 	charm = False
+	curse = False
 	died = False
 	explored = []
 
@@ -325,7 +373,7 @@ def playGame(gameMap, difficulty, seed):
 		for y in range(len(gameMap[d])):
 			explored[d].append([])
 			for x in range(len(gameMap[d][y])):
-				explored[d][y].append(const.DEBUG)
+				explored[d][y].append(False)
 
 	track: Popen = None
 	filePath = os.path.dirname(os.path.realpath(__file__))
@@ -344,7 +392,7 @@ def playGame(gameMap, difficulty, seed):
 	currentRoom: Room = currentDepth[posRooms[1]][posRooms[0]]
 	posInt: List[int] = list(currentRoom.entryPoint)
 
-	loadedMonsters = generateMonsters(currentDepthRooms, depth, difficulty)
+	loadedMonsters = generateMonsters(currentDepthRooms, depth, difficulty, curse)
 
 	noclip = False
 	newInfo = ''
@@ -386,7 +434,7 @@ def playGame(gameMap, difficulty, seed):
 		while keyPressed is False:
 			continue
 
-		if command == '>':
+		if command == ':':
 			input('')
 			command = input('Enter command: ')
 
@@ -400,29 +448,12 @@ def playGame(gameMap, difficulty, seed):
 
 			track = Popen(['/usr/bin/afplay', filePath + '/data/music (hidden).mp3'])
 
-		# Cheat codes
-		elif command == 'winxp':  # (Windows) eXPlore
-			for d in range(len(explored)):
-				for y in range(len(explored[d])):
-					for x in range(len(explored[d][y])):
-						explored[d][y][x] = True
-		elif command == 'kkjjhlhlba':  # Konami code, must have
-			charm = True
-		elif command == 'northernlights':  # "May I see it?"
-			itemsDetected = True
-		elif command == 'noclip':  # Stop monsters moving
-			noclip = not noclip
-		elif command == 'deadlylazer': # The sun is a deadly lazer
-			for monster in loadedMonsters:
-				monster.room.monsters[(monster.x, monster.y)] = None
-				loadedMonsters.remove(monster)
-
 		# Movement - Cardinal
 		elif command == 'h' or command == 'a':
 			if posInt[0] > 0:
 				if currentRoom.monsters[(posInt[0] - 1, posInt[1])] is not None:
 					newInfo = currentRoom.monsters[(posInt[0] - 1, posInt[1])].hitmsg()
-					if currentRoom.monsters[(posInt[0] - 1, posInt[1])].hit(attack):
+					if currentRoom.monsters[(posInt[0] - 1, posInt[1])].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] - 1, posInt[1])])
 						currentRoom.monsters[(posInt[0] - 1, posInt[1])] = None
 					didMove = True
@@ -442,7 +473,7 @@ def playGame(gameMap, difficulty, seed):
 			if posInt[1] < const.ROOM_HEIGHT - 1:
 				if currentRoom.monsters[(posInt[0], posInt[1] + 1)] is not None:
 					newInfo = currentRoom.monsters[(posInt[0], posInt[1] + 1)].hitmsg()
-					if currentRoom.monsters[(posInt[0], posInt[1] + 1)].hit(attack):
+					if currentRoom.monsters[(posInt[0], posInt[1] + 1)].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0], posInt[1] + 1)])
 						currentRoom.monsters[(posInt[0], posInt[1] + 1)] = None
 					didMove = True
@@ -462,7 +493,7 @@ def playGame(gameMap, difficulty, seed):
 			if posInt[1] > 0:
 				if currentRoom.monsters[(posInt[0], posInt[1] - 1)] is not None:
 					newInfo = currentRoom.monsters[(posInt[0], posInt[1] - 1)].hitmsg()
-					if currentRoom.monsters[(posInt[0], posInt[1] - 1)].hit(attack):
+					if currentRoom.monsters[(posInt[0], posInt[1] - 1)].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0], posInt[1] - 1)])
 						currentRoom.monsters[(posInt[0], posInt[1] - 1)] = None
 					didMove = True
@@ -482,7 +513,7 @@ def playGame(gameMap, difficulty, seed):
 			if posInt[0] < const.ROOM_WIDTH - 1:
 				if currentRoom.monsters[(posInt[0] + 1, posInt[1])] is not None:
 					newInfo = currentRoom.monsters[(posInt[0] + 1, posInt[1])].hitmsg()
-					if currentRoom.monsters[(posInt[0] + 1, posInt[1])].hit(attack):
+					if currentRoom.monsters[(posInt[0] + 1, posInt[1])].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] + 1, posInt[1])])
 						currentRoom.monsters[(posInt[0] + 1, posInt[1])] = None
 					didMove = True
@@ -503,7 +534,7 @@ def playGame(gameMap, difficulty, seed):
 			if posInt[0] > 0 and posInt[1] > 0:
 				if currentRoom.monsters[(posInt[0] - 1, posInt[1] - 1)] is not None:
 					newInfo = currentRoom.monsters[(posInt[0] - 1, posInt[1] - 1)].hitmsg()
-					if currentRoom.monsters[(posInt[0] - 1, posInt[1] - 1)].hit(attack):
+					if currentRoom.monsters[(posInt[0] - 1, posInt[1] - 1)].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] - 1, posInt[1] - 1)])
 						currentRoom.monsters[(posInt[0] - 1, posInt[1] - 1)] = None
 					didMove = True
@@ -521,7 +552,7 @@ def playGame(gameMap, difficulty, seed):
 			if posInt[0] < const.ROOM_WIDTH - 1 and posInt[1] > 0:
 				if currentRoom.monsters[(posInt[0] + 1, posInt[1] - 1)] is not None:
 					newInfo = currentRoom.monsters[(posInt[0] + 1, posInt[1] - 1)].hitmsg()
-					if currentRoom.monsters[(posInt[0] + 1, posInt[1] - 1)].hit(attack):
+					if currentRoom.monsters[(posInt[0] + 1, posInt[1] - 1)].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] + 1, posInt[1] - 1)])
 						currentRoom.monsters[(posInt[0] + 1, posInt[1] - 1)] = None
 					didMove = True
@@ -539,7 +570,7 @@ def playGame(gameMap, difficulty, seed):
 			if posInt[0] > 0 and posInt[1] < const.ROOM_HEIGHT - 1:
 				if currentRoom.monsters[(posInt[0] - 1, posInt[1] + 1)] is not None:
 					newInfo = currentRoom.monsters[(posInt[0] - 1, posInt[1] + 1)].hitmsg()
-					if currentRoom.monsters[(posInt[0] - 1, posInt[1] + 1)].hit(attack):
+					if currentRoom.monsters[(posInt[0] - 1, posInt[1] + 1)].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] - 1, posInt[1] + 1)])
 						currentRoom.monsters[(posInt[0] - 1, posInt[1] + 1)] = None
 					didMove = True
@@ -557,7 +588,7 @@ def playGame(gameMap, difficulty, seed):
 			if posInt[0] < const.ROOM_WIDTH - 1 and posInt[1] < const.ROOM_HEIGHT - 1:
 				if currentRoom.monsters[(posInt[0] + 1, posInt[1] + 1)] is not None:
 					newInfo = currentRoom.monsters[(posInt[0] + 1, posInt[1] + 1)].hitmsg()
-					if currentRoom.monsters[(posInt[0] + 1, posInt[1] + 1)].hit(attack):
+					if currentRoom.monsters[(posInt[0] + 1, posInt[1] + 1)].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] + 1, posInt[1] + 1)])
 						currentRoom.monsters[(posInt[0] + 1, posInt[1] + 1)] = None
 					didMove = True
@@ -582,14 +613,20 @@ def playGame(gameMap, difficulty, seed):
 				keyListener.stop()
 				io.putHighScore('Quit on depth ' + str(depth), score)
 				health = 0
+		elif command == 'q!': # Force quit
+			keyListener.stop()
+			io.putHighScore('Spontaneously combusted on depth ' + str(depth), score)
+			if track is not None:
+				track.terminate()
+			return
 		elif command == 'p':
 			rd.suspend()
 
 		# Seed and difficulty
 		elif command == 'seed':
-			newInfo = 'Seed: ' + seed
+			newInfo = 'Seed: ' + str(seed)
 		elif command == 'diff' or command == 'difficulty':
-			newInfo = 'Difficulty: ' + difficulty
+			newInfo = 'Difficulty: ' + str(difficulty)
 
 		# Help
 		elif command == '?':
@@ -597,7 +634,21 @@ def playGame(gameMap, difficulty, seed):
 
 		# Debug commands
 		elif const.DEBUG:
-			if command.startswith('d'):
+			# Cheat codes
+			if command == 'winxp':  # (Windows) eXPlore
+				for d in range(len(explored)):
+					for y in range(len(explored[d])):
+						for x in range(len(explored[d][y])):
+							explored[d][y][x] = True
+			elif command == 'kkjjhlhlba':  # Konami code, must have
+				charm = True
+			elif command == 'northernlights':  # "May I see it?"
+				itemsDetected = True
+			elif command == 'noclip':  # Stop monsters moving
+				noclip = not noclip
+			elif command == 'deadlylazer': # The sun is a deadly lazer
+				curse = True
+			elif command.startswith('d'):
 				try:
 					d = int(command[1:])
 					if d <= const.MAX_DEPTH:
@@ -610,7 +661,7 @@ def playGame(gameMap, difficulty, seed):
 							for eachRoom in currentDepth[y]:
 								if eachRoom is not None:
 									currentDepthRooms.append(eachRoom)
-						loadedMonsters = generateMonsters(currentDepthRooms, depth, difficulty)
+						loadedMonsters = generateMonsters(currentDepthRooms, depth, difficulty, curse)
 				except Exception:
 					pass
 
@@ -625,7 +676,7 @@ def playGame(gameMap, difficulty, seed):
 					for eachRoom in currentDepth[y]:
 						if eachRoom is not None:
 							currentDepthRooms.append(eachRoom)
-				loadedMonsters = generateMonsters(currentDepthRooms, depth, difficulty)
+				loadedMonsters = generateMonsters(currentDepthRooms, depth, difficulty, curse)
 
 				posRooms = list(currentDepth[len(currentDepth) - 1][0])
 				posInt = list(currentDepth[posRooms[1]][posRooms[0]].entryPoint)
@@ -639,7 +690,7 @@ def playGame(gameMap, difficulty, seed):
 					for eachRoom in currentDepth[y]:
 						if eachRoom is not None:
 							currentDepthRooms.append(eachRoom)
-				loadedMonsters = generateMonsters(currentDepthRooms, depth, difficulty)
+				loadedMonsters = generateMonsters(currentDepthRooms, depth, difficulty, curse)
 
 				posRooms = list(currentDepth[len(currentDepth) - 1][1])
 				posInt = list(currentDepth[posRooms[1]][posRooms[0]].entryPoint)
@@ -667,11 +718,13 @@ def playGame(gameMap, difficulty, seed):
 
 				newInfo = modifiers[4]
 
-				if modifiers[5] & 0b001 is not 0:
+				if modifiers[5] & 0b00001 is not 0:
 					itemsDetected = True
-				if modifiers[5] & 0b010 is not 0:
+				if modifiers[5] & 0b00010 is not 0:
 					charm = True
-				if modifiers[5] & 0b100 is not 0:
+				if modifiers[5] & 0b00100 is not 0:
+					curse = True
+				if modifiers[5] & 0b01000 is not 0:
 					for i in range(rand(2, 5)):
 						monster = random.choice(monsters.possibleMonsters[depth + difficulty - 1])
 
@@ -690,13 +743,31 @@ def playGame(gameMap, difficulty, seed):
 						elif monster is 4:
 							new = monsters.Pharaoh(x, y, currentRoom, difficulty)
 						elif monster is 5:
-							new = monsters.Lek(x, y, currentRoom, difficulty)
+							new = monsters.Sand(x, y, currentRoom, difficulty)
 						elif monster is 6:
-							new = monsters.Chin(x, y, currentRoom, difficulty)
+							new = monsters.Warden(x, y, currentRoom, difficulty)
 						new.room.monsters[(x, y)] = new
 						loadedMonsters.append(new)
 
 				del currentRoom.items[(posInt[0], posInt[1])]
+
+				if modifiers[5] & 0b10000 is not 0:
+					# Load lower depth
+					depth += 1
+					currentDepth = gameMap[depth]
+					currentDepthRooms = []
+					itemsDetected = False
+					for y in range(len(currentDepth) - 1):
+						for eachRoom in currentDepth[y]:
+							if eachRoom is not None:
+								currentDepthRooms.append(eachRoom)
+					loadedMonsters = generateMonsters(currentDepthRooms, depth, difficulty, curse)
+
+					posRooms = list(currentDepth[len(currentDepth) - 1][0])
+					posInt = list(currentDepth[posRooms[1]][posRooms[0]].entryPoint)
+
+					explored[depth][posRooms[1]][posRooms[0]] = True  # Room is explored
+					currentRoom = currentDepth[posRooms[1]][posRooms[0]]  # currentRoom is up to date
 
 			# Monster movement
 			if not noclip:
@@ -785,7 +856,7 @@ def playGame(gameMap, difficulty, seed):
 					health = math.ceil(health)
 
 					if health <= 0:
-						if type(monster) == monsters.Lek:
+						if type(monster) == monsters.Sand:
 							if track is not None:
 								track.terminate()
 

@@ -99,7 +99,7 @@ def commands():
 	print('Commands: q: Quit game')
 	print('          p: Suspend game')
 	print()
-	print('> <enter>: input long commands:')
+	print(': <enter>: input long commands:')
 	print('          "seed": Show game seed')
 	print('          "difficulty": Show game difficulty')
 	print()
