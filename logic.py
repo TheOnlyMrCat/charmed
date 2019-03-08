@@ -449,6 +449,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0] - 1, posInt[1])].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] - 1, posInt[1])])
 						currentRoom.monsters[(posInt[0] - 1, posInt[1])] = None
+						currentRoom.items[(posInt[0] - 1, posInt[1])] = items.Gold(currentRoom, posInt[0] - 1, posInt[1], rand(20 * (depth + 1), 60 * (depth + 1)))
 					didMove = True
 				elif currentRoom.body[posInt[1]][posInt[0] - 1] not in roomDef.BLOCKING:
 					posInt[0] -= 1
@@ -469,6 +470,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0], posInt[1] + 1)].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0], posInt[1] + 1)])
 						currentRoom.monsters[(posInt[0], posInt[1] + 1)] = None
+						currentRoom.items[(posInt[0], posInt[1] + 1)] = items.Gold(currentRoom, posInt[0], posInt[1] + 1, rand(20 * (depth + 1), 60 * (depth + 1)))
 					didMove = True
 				elif currentRoom.body[posInt[1] + 1][posInt[0]] not in roomDef.BLOCKING:
 					posInt[1] += 1
@@ -489,6 +491,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0], posInt[1] - 1)].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0], posInt[1] - 1)])
 						currentRoom.monsters[(posInt[0], posInt[1] - 1)] = None
+						currentRoom.items[(posInt[0], posInt[1] - 1)] = items.Gold(currentRoom, posInt[0], posInt[1] - 1, rand(20 * (depth + 1), 60 * (depth + 1)))
 					didMove = True
 				elif currentRoom.body[posInt[1] - 1][posInt[0]] not in roomDef.BLOCKING:
 					posInt[1] -= 1
@@ -509,6 +512,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0] + 1, posInt[1])].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] + 1, posInt[1])])
 						currentRoom.monsters[(posInt[0] + 1, posInt[1])] = None
+						currentRoom.items[(posInt[0] + 1, posInt[1])] = items.Gold(currentRoom, posInt[0] + 1, posInt[1], rand(20 * (depth + 1), 60 * (depth + 1)))
 					didMove = True
 				elif currentRoom.body[posInt[1]][posInt[0] + 1] not in roomDef.BLOCKING:
 					posInt[0] += 1
@@ -530,6 +534,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0] - 1, posInt[1] - 1)].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] - 1, posInt[1] - 1)])
 						currentRoom.monsters[(posInt[0] - 1, posInt[1] - 1)] = None
+						currentRoom.items[(posInt[0] - 1, posInt[1] - 1)] = items.Gold(currentRoom, posInt[0] - 1, posInt[1] - 1, rand(20 * (depth + 1), 60 * (depth + 1)))
 					didMove = True
 				elif currentRoom.body[posInt[1] - 1][posInt[0] - 1] not in roomDef.BLOCKING and (charm or (currentRoom.body[posInt[1] - 1][posInt[0]] not in roomDef.BLOCKING and currentRoom.body[posInt[1]][posInt[0] - 1] not in roomDef.BLOCKING)):
 					posInt[0] -= 1
@@ -548,6 +553,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0] + 1, posInt[1] - 1)].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] + 1, posInt[1] - 1)])
 						currentRoom.monsters[(posInt[0] + 1, posInt[1] - 1)] = None
+						currentRoom.items[(posInt[0] + 1, posInt[1] - 1)] = items.Gold(currentRoom, posInt[0] + 1, posInt[1] - 1, rand(20 * (depth + 1), 60 * (depth + 1)))
 					didMove = True
 				elif currentRoom.body[posInt[1] - 1][posInt[0] + 1] not in roomDef.BLOCKING and (charm or (currentRoom.body[posInt[1] - 1][posInt[0]] not in roomDef.BLOCKING and currentRoom.body[posInt[1]][posInt[0] + 1] not in roomDef.BLOCKING)):
 					posInt[0] += 1
@@ -566,6 +572,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0] - 1, posInt[1] + 1)].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] - 1, posInt[1] + 1)])
 						currentRoom.monsters[(posInt[0] - 1, posInt[1] + 1)] = None
+						currentRoom.items[(posInt[0] - 1, posInt[1] + 1)] = items.Gold(currentRoom, posInt[0] - 1, posInt[1] + 1, rand(20 * (depth + 1), 60 * (depth + 1)))
 					didMove = True
 				elif currentRoom.body[posInt[1] + 1][posInt[0] - 1] not in roomDef.BLOCKING and (charm or (currentRoom.body[posInt[1] + 1][posInt[0]] not in roomDef.BLOCKING and currentRoom.body[posInt[1]][posInt[0] - 1] not in roomDef.BLOCKING)):
 					posInt[0] -= 1
@@ -584,6 +591,7 @@ def playGame(gameMap, difficulty, seed):
 					if currentRoom.monsters[(posInt[0] + 1, posInt[1] + 1)].hit(attack, curse):
 						loadedMonsters.remove(currentRoom.monsters[(posInt[0] + 1, posInt[1] + 1)])
 						currentRoom.monsters[(posInt[0] + 1, posInt[1] + 1)] = None
+						currentRoom.items[(posInt[0] + 1, posInt[1] + 1)] = items.Gold(currentRoom, posInt[0] + 1, posInt[1] + 1, rand(20 * (depth + 1), 60 * (depth + 1)))
 					didMove = True
 				elif currentRoom.body[posInt[1] + 1][posInt[0] + 1] not in roomDef.BLOCKING and (charm or (currentRoom.body[posInt[1] + 1][posInt[0]] not in roomDef.BLOCKING and currentRoom.body[posInt[1]][posInt[0] + 1] not in roomDef.BLOCKING)):
 					posInt[0] += 1
