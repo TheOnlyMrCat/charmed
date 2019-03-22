@@ -44,7 +44,6 @@ exit = exitf + 'H'
 
 
 def welcome():
-	header()
 	print('Welcome to charmed.')
 	print('Ensure your terminal window is full-screen.')
 	print('When the game starts, do not switch to another window without suspending the game by pressing "p"')
