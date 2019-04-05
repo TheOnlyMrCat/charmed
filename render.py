@@ -1,5 +1,6 @@
 from typing import List
 
+import sys
 import math
 import constants as const
 import subprocess
@@ -41,6 +42,13 @@ upstair = stairf + '<'
 
 exitf = '\x1b[0;35;105m'
 exit = exitf + 'H'
+
+
+def clearscreen():
+	if sys.platform.startswith('win32'):
+		subprocess.call('cls')
+	else:
+		subprocess.call('clear')
 
 
 def welcome():
@@ -116,7 +124,7 @@ def suspend():
 
 
 def header():
-	subprocess.call('clear')
+	clearscreen()
 	print(blankf + '', end='')
 	print('=============== Charmed ===============')
 
