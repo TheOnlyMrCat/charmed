@@ -4,6 +4,13 @@ game development class. The goal is to escape the dungeon with the
 Charm of Relativity found on the ninth level. The random generation
 is seeded, given difficulty, and balanced to be extremely difficult.
 
+**Warning: Old code!** This code uses an external library to get
+global keyboard input. This was done to mimic terminal raw mode,
+because I didn't know that existed yet. (hence the warning "do not
+switch to another window without suspending the game by pressing 'p'"
+*Do not use this repository as an example for how to make a tui app.*
+Or a roguelike, for that matter.
+
 ## Prerequisites
 Charmed has been tested on Python 3.7. If anybody tests it on another
 version, make a pull request of this file giving the lowest version
